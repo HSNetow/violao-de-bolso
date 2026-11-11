@@ -302,7 +302,9 @@
 
   function iniciar() {
     lerHash();
-    if (new URLSearchParams(location.search).get('demo') === '1') { E.dados.config.demo = true; E.salvar(); }
+    // o modo demonstração vale só para a visita atual: nunca fica preso
+    const querDemo = new URLSearchParams(location.search).get('demo') === '1';
+    if (E.dados.config.demo !== querDemo) { E.dados.config.demo = querDemo; E.salvar(); }
     atualizar();
     if (!E.dados.boasVindas) boasVindas();
     if ('serviceWorker' in navigator && window.isSecureContext) navigator.serviceWorker.register('sw.js').catch(() => {});

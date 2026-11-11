@@ -16,6 +16,7 @@
   async function ligarMic(palco, aoTentarDeNovo) {
     try {
       M.simulado = !!E.dados.config.demo;
+      if (M.simulado) aviso('Modo demonstração: um violão virtual toca no seu lugar e o microfone fica desligado. Desligue em Perfil.');
       await M.ligarMicrofone();
       const cfg = E.dados.config;
       M.latencia = M.simulado ? 0.012 : (cfg.latencia !== null && cfg.latencia !== undefined ? cfg.latencia : M.latenciaPadrao());
@@ -621,6 +622,7 @@
     const btPrevia = el('button', { class: 'bt bt-secundario' });
     const desenharPrevia = (tocando) => { btPrevia.innerHTML = ''; btPrevia.append(icone(tocando ? 'fechar' : 'som'), tocando ? ' Parar' : ' Ouvir como fica'); };
     desenharPrevia(false);
+    btPrevia.hidden = !!m.gravacao;
     btPrevia.addEventListener('click', async () => {
       if (M.bandaAtual) { M.pararBanda(); return; }
       await M.garantirContexto();
@@ -644,11 +646,11 @@
         prog.estrelas ? estrelas(prog.estrelas) : null),
       el('p', { class: 'ac-dica' }, m.nota),
       caixaFalta,
+      secaoGravacao(palco, m, pref),
       el('div', { class: 'rotulo' }, 'Acordes' + (m.capo && capo ? ` · capotraste na casa ${m.capo}` : '')),
       chipsAcordes(ids, capo),
       el('div', { class: 'opcoes' }, ...opcoesBanda(), opcaoCapo(m.capo, () => paginaMusica(palco, m)), opcaoMetronomo()),
       el('p', { class: 'nota' }, AVISO_FONE),
-      secaoGravacao(palco, m, pref),
       el('div', { class: 'rotulo' }, m.gravacao ? 'Ou treine sem a gravação · ritmo' : 'Ritmo'), niveis,
       el('div', { class: 'rotulo' }, 'Velocidade'), el('div', { class: 'linha-range' }, vel, velTxt),
       el('div', { class: 'linha-botoes' }, btPrevia, E.dados.foco === m.id ? null : el('button', { class: 'bt bt-secundario', onclick: () => { E.dados.foco = m.id; E.salvar(); aviso('Esta agora é a sua música na tela inicial.', 'ok'); } }, 'Escolher como minha música')),
