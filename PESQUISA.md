@@ -79,6 +79,36 @@ Para o ritmo, usa-se **detecção de ataques** (onset detection): um salto de en
 marca o instante da palhetada, comparado com o tempo do metrônomo. O atraso do celular
 (som saindo e entrando) precisa ser calibrado.
 
+## Segunda rodada: por que o Simply Guitar "parece música" e o nosso não parecia
+
+Depois de testar a primeira versão, a sensação foi de curso de exercícios, não de música.
+A pesquisa mostrou de onde vem a diferença:
+
+- **Faixa de acompanhamento.** No Simply, cada lição termina com o que você praticou tocado por
+  cima de uma banda. Reviewers descrevem como "tocar com músicos em vez de fazer exercício".
+- **A sua parte é mínima.** Nas primeiras lições é uma nota ou uma batida por compasso sobre a
+  faixa cheia. A banda faz soar como música; o aluno precisa acertar pouco.
+- **Música primeiro.** Professores de adultos recomendam que as primeiras sessões já soem como
+  uma música de verdade, ainda que simplificada. É o que mais segura a motivação.
+- **Modo "espere por mim"** e velocidades de 60/80/100% (Simply Piano).
+
+O que mudou no Violão de Bolso por causa disso:
+
+- **Banda de acompanhamento** (bateria e baixo sintetizados) nas músicas e nos desafios.
+  Não usamos a gravação original nem a melodia cantada, por direitos autorais.
+- **"Ouvir como fica"**: a banda toca o refrão com um violão guia.
+- **"Sua música"** no topo da tela inicial: a música escolhida, os acordes que faltam e um botão
+  para o próximo passo. As músicas não ficam mais trancadas atrás de desafios.
+- As lições de acorde ficam sempre abertas, e as unidades do curso aparecem recolhidas.
+
+Fontes desta rodada:
+- https://guitar.com/reviews/accessories/simply-guitar-review/
+- https://www.riffhard.com/how-to-use-simply-guitar/
+- https://stringshock.com/simply-guitar-app-review/
+- https://www.musicradar.com/reviews/simply-piano-review
+- https://tonypolecastro.com/learn/why-adults-quit-guitar/
+- https://www.picktoplayguitar.com/learn-guitar-blog/learn-guitar-adult-beginners-sw-london-emne5
+
 ## O que o Violão de Bolso pegou de cada um
 
 | Ideia | De onde | Como ficou |

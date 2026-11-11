@@ -38,6 +38,22 @@
   function renderTrilha() {
     const c = main();
     const nAprendidos = E.acordesAprendidos().length;
+    const foco = C.MUSICAS.find((m) => m.id === E.dados.foco) || C.MUSICAS.find((m) => !(E.dados.musicas[m.id] || {}).estrelas) || C.MUSICAS[0];
+    const faltam = E.acordesFaltando(foco);
+    const sabe = new Set(E.acordesAprendidos());
+    const proxAcorde = faltam.length ? C.LICOES.find((l) => l.tipo === 'acorde' && l.acorde === faltam[0]) : null;
+    c.append(el('section', { class: 'cartao-foco' },
+      el('div', { class: 'rotulo' }, 'Sua música'),
+      el('h2', null, foco.titulo), el('div', { class: 'musica-artista' }, foco.artista),
+      el('div', { class: 'cm-acordes' }, ...foco.acordes.map((id) => el('span', { class: 'tag' + (sabe.has(id) ? ' sabe' : '') }, T.ACORDES[id].nome))),
+      el('p', null, faltam.length ? 'Falta aprender: ' + faltam.map((id) => T.ACORDES[id].nome).join(', ') + '. Depois é tocar com a banda.' : 'Você já sabe todos os acordes. Toque com a banda: uma batida por acorde já soa como a música.'),
+      el('div', { class: 'linha-botoes' },
+        proxAcorde ? el('button', { class: 'bt', onclick: () => L.rodarLicao(proxAcorde) }, 'Aprender o acorde ' + T.ACORDES[proxAcorde.acorde].nome) : el('button', { class: 'bt', onclick: () => L.abrirMusica(foco) }, icone('play'), ' Tocar com a banda'),
+        proxAcorde ? el('button', { class: 'bt bt-secundario', onclick: () => L.abrirMusica(foco) }, 'Tocar mesmo assim') : null,
+        el('button', { class: 'bt bt-secundario', onclick: () => irPara('musicas') }, 'Trocar de música'))));
+    const licAtual = C.LICOES.find((l) => !E.concluida(l.id) && E.licaoDesbloqueada(l.id));
+    const unidadeAtual = licAtual ? licAtual.unidade : null;
+    c.append(el('h3', null, 'Curso passo a passo'));
     const td = E.treinoDia(), nFeitos = td.feitos.filter(Boolean).length, ra = E.ritmoAtual();
     c.append(el('button', { class: 'cartao-treino' + (nFeitos === 3 ? ' completo' : ''), onclick: () => L.treinoDoDia() },
       el('div', { class: 'ct-texto' },
@@ -81,10 +97,14 @@
         const livre = E.musicaDesbloqueada(m);
         const pm = E.dados.musicas[m.id] || {};
         caminho.append(el('li', { class: 'no musica ' + (livre ? 'livre' : 'bloqueada') },
-          el('button', { class: 'no-botao', 'aria-label': 'Música ' + m.titulo, onclick: () => { if (!livre) { aviso('Vença o desafio da unidade para liberar a música.'); return; } L.abrirMusica(m); } }, icone(livre ? 'musica' : 'cadeado')),
+          el('button', { class: 'no-botao', 'aria-label': 'Música ' + m.titulo, onclick: () => L.abrirMusica(m) }, icone(livre ? 'musica' : 'cadeado')),
           el('div', { class: 'no-texto' }, el('b', null, m.titulo), el('span', null, m.artista), pm.estrelas ? estrelas(pm.estrelas) : null)));
       });
-      sec.append(caminho);
+      const aberta = u.id === unidadeAtual;
+      caminho.hidden = !aberta;
+      const alternar = el('button', { class: 'bt bt-pequeno bt-secundario alternar', 'aria-expanded': String(aberta) }, aberta ? 'Ocultar lições' : 'Ver lições');
+      alternar.addEventListener('click', () => { caminho.hidden = !caminho.hidden; alternar.textContent = caminho.hidden ? 'Ver lições' : 'Ocultar lições'; alternar.setAttribute('aria-expanded', String(!caminho.hidden)); });
+      sec.append(alternar, caminho);
       c.append(sec);
     });
     c.append(el('section', { class: 'unidade final' },
@@ -95,24 +115,24 @@
   // ---------- Músicas ----------
   function renderMusicas() {
     const c = main();
-    c.append(el('p', { class: 'intro-aba' }, 'Cada música tem uma versão simplificada para estudar por partes e o projeto final: tocar tudo. Sem letra; se quiser cantar, abra a letra num site de cifras.'));
+    c.append(el('p', { class: 'intro-aba' }, 'Escolha uma música e toque com a banda (bateria e baixo). No ritmo Fácil, uma batida por acorde já soa como música. Sem letra; se quiser cantar, abra a letra num site de cifras.'));
     const lista = el('div', { class: 'lista-musicas' });
     C.MUSICAS.forEach((m) => {
       const livre = E.musicaDesbloqueada(m);
       const pm = E.dados.musicas[m.id] || {};
       const ids = [...new Set(m.secoes.flatMap((s) => s.compassos.split(/[|\s]+/).filter(Boolean)))];
-      const falta = m.requer.filter((id) => !E.concluida(id)).map((id) => C.LICOES.find((l) => l.id === id).titulo);
+      const falta = E.acordesFaltando(m).map((id) => T.ACORDES[id].nome);
       lista.append(el('button', {
-        class: 'cartao-musica' + (livre ? '' : ' bloqueada'),
-        onclick: () => { if (!livre) { aviso('Para liberar: ' + falta.join(', ')); return; } L.abrirMusica(m); }
+        class: 'cartao-musica',
+        onclick: () => L.abrirMusica(m)
       },
       el('div', { class: 'cm-topo' },
         el('div', null, el('b', null, m.titulo), el('span', null, m.artista)),
-        livre ? estrelas(pm.estrelas || 0) : icone('cadeado')),
+        estrelas(pm.estrelas || 0)),
       el('div', { class: 'cm-acordes' }, ...ids.map((id) => el('span', { class: 'tag' }, T.ACORDES[id].nome))),
       el('div', { class: 'cm-rodape' },
         el('span', { class: 'dificuldade', 'aria-label': 'Dificuldade ' + m.dificuldade + ' de 3' }, ...[1, 2, 3].map((n) => el('i', { class: n <= m.dificuldade ? 'cheio' : '' }))),
-        el('span', null, livre ? (m.capo ? `capotraste ${m.capo} · ` : '') + m.bpm + ' bpm' : 'Libera em: ' + falta.join(', ')))));
+        el('span', null, livre ? (m.capo ? `capotraste ${m.capo} · ` : '') + m.bpm + ' bpm' : 'Falta aprender: ' + falta.join(', ')))));
     });
     c.append(lista);
   }

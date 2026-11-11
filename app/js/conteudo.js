@@ -48,7 +48,7 @@
         { id: 'u2-d69', tipo: 'acorde', acorde: 'D69', titulo: 'Acorde D6/9', resumo: 'Mesmos dedos do Em, em outras cordas' },
         { id: 'u2-troca', tipo: 'troca', a: 'Em', b: 'D69', titulo: 'Troca Em ↔ D6/9', resumo: 'Quantas trocas em 1 minuto?', metas: [10, 20, 30] },
         { id: 'u2-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: Em e D6/9', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'Em | D69', repetir: 4, padrao: 'q1', bpm: 60 },
-        { id: 'u2-desafio', tipo: 'progressao', titulo: 'Desafio: Em e D6/9', resumo: 'Libera "A Horse With No Name"', compassos: 'Em | D69 | Em | D69', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
+        { id: 'u2-desafio', tipo: 'progressao', titulo: 'Desafio: Em e D6/9', resumo: 'Feche a unidade tocando com a banda', compassos: 'Em | D69 | Em | D69', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
       ]
     },
     {
@@ -80,7 +80,7 @@
         { id: 'u5-troca-g-c', tipo: 'troca', a: 'G', b: 'C', titulo: 'Troca G ↔ C', resumo: '1 minuto de trocas', metas: [10, 20, 30] },
         { id: 'u5-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: G e C', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'G | C', repetir: 4, padrao: 'q1', bpm: 60 },
         { id: 'u5-troca-g-d', tipo: 'troca', a: 'G', b: 'D', titulo: 'Troca G ↔ D', resumo: '1 minuto de trocas', metas: [10, 20, 30] },
-        { id: 'u5-desafio', tipo: 'progressao', titulo: 'Desafio: G, D, Am e C', resumo: 'Libera "Knockin\' on Heaven\'s Door"', compassos: 'G | D | Am | Am | G | D | C | C', repetir: 1, padrao: 'q4', bpm: 68, desafio: true }
+        { id: 'u5-desafio', tipo: 'progressao', titulo: 'Desafio: G, D, Am e C', resumo: 'Feche a unidade tocando com a banda', compassos: 'G | D | Am | Am | G | D | C | C', repetir: 1, padrao: 'q4', bpm: 68, desafio: true }
       ]
     },
     {
@@ -106,7 +106,7 @@
         { id: 'u6-pop-abafado', tipo: 'ritmo', titulo: 'Ritmo universal abafado', resumo: 'Etapa 2: a mão desce sem tocar no tempo 3', padrao: 'pop', bpm: 50, compassos: 4, acorde: null },
         { id: 'u6-pop', tipo: 'ritmo', titulo: 'Ritmo universal', resumo: '↓ ↓↑ ↑↓↑ com Em', padrao: 'pop', bpm: 58, compassos: 4, acorde: 'Em' },
         { id: 'u6-pop-troca', tipo: 'progressao', titulo: 'Ritmo universal com troca', resumo: 'Dois compassos em cada acorde', compassos: 'Em | Em | G | G', repetir: 2, padrao: 'pop', bpm: 58 },
-        { id: 'u6-desafio', tipo: 'progressao', titulo: 'Desafio: G, Em, C e D', resumo: 'Libera "Stand By Me"', compassos: 'G | Em | C | D', repetir: 2, padrao: 'pop', bpm: 70, desafio: true }
+        { id: 'u6-desafio', tipo: 'progressao', titulo: 'Desafio: G, Em, C e D', resumo: 'Feche a unidade tocando com a banda', compassos: 'G | Em | C | D', repetir: 2, padrao: 'pop', bpm: 70, desafio: true }
       ]
     },
     {
@@ -117,7 +117,7 @@
         { id: 'u7-am7', tipo: 'acorde', acorde: 'Am7', titulo: 'Acorde Am7', resumo: 'Lá menor com sétima' },
         { id: 'u7-bm', tipo: 'acorde', acorde: 'Bm7', titulo: 'Acorde Bm (simplificado)', resumo: 'Si menor sem pestana' },
         { id: 'u7-dsus2', tipo: 'acorde', acorde: 'Dsus2', titulo: 'Acorde Dsus2', resumo: 'O Ré aberto de "Hurt"' },
-        { id: 'u7-desafio', tipo: 'progressao', titulo: 'Desafio: C, G, Am e F', resumo: 'Libera 4 músicas', compassos: 'C | G | Am | Fmaj7', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
+        { id: 'u7-desafio', tipo: 'progressao', titulo: 'Desafio: C, G, Am e F', resumo: 'Feche a unidade tocando com a banda', compassos: 'C | G | Am | Fmaj7', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
       ]
     },
     {
@@ -141,7 +141,7 @@
         { id: 'u8-dsus4', tipo: 'acorde', acorde: 'Dsus4', capo: 2, titulo: 'Acorde Dsus4', resumo: 'Ré com quarta' },
         { id: 'u8-a7sus4', tipo: 'acorde', acorde: 'A7sus4', capo: 2, titulo: 'Acorde A7sus4', resumo: 'Lá com sétima e quarta' },
         { id: 'u8-cadd9', tipo: 'acorde', acorde: 'Cadd9', capo: 2, titulo: 'Acorde Cadd9', resumo: 'Dó com nona' },
-        { id: 'u8-desafio', tipo: 'progressao', titulo: 'Desafio: a volta de Wonderwall', resumo: 'Libera "Wonderwall"', compassos: 'Em7 | Gww | Dsus4 | A7sus4', repetir: 2, padrao: 'pop', bpm: 72, capo: 2, desafio: true }
+        { id: 'u8-desafio', tipo: 'progressao', titulo: 'Desafio: a volta de Wonderwall', resumo: 'Feche a unidade tocando com a banda', compassos: 'Em7 | Gww | Dsus4 | A7sus4', repetir: 2, padrao: 'pop', bpm: 72, capo: 2, desafio: true }
       ]
     }
   ];
@@ -322,6 +322,8 @@
     { xp: 2500, nome: 'Mestre das cifras' },
     { xp: 3300, nome: 'Lenda do violão' }
   ];
+
+  MUSICAS.forEach((m) => { m.acordes = [...new Set(m.secoes.flatMap((x) => x.compassos.split(/[|\s]+/).filter(Boolean)))]; });
 
   // Lista plana de lições na ordem da trilha
   const LICOES = [];

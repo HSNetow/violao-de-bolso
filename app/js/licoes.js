@@ -82,8 +82,9 @@
     return b;
   }
 
-  function musicasLiberadasPor(licaoId) {
-    return C.MUSICAS.filter((m) => m.requer.includes(licaoId) && E.musicaDesbloqueada(m));
+  function musicasLiberadasPor(licao) {
+    if (licao.tipo !== 'acorde') return [];
+    return C.MUSICAS.filter((m) => m.acordes.includes(licao.acorde) && E.musicaDesbloqueada(m));
   }
 
   function concluir(palco, licao, estrelasN, o) {
@@ -92,8 +93,8 @@
     if (estrelasN > 0 && licao.pularAte) E.pularAte(licao.id);
     let extra = null;
     if (estrelasN > 0 && !jaTinha) {
-      const novas = musicasLiberadasPor(licao.id);
-      if (novas.length) extra = el('div', { class: 'resultado-liberou' }, icone('musica'), el('div', null, el('b', null, 'Música liberada'), el('span', null, novas.map((m) => m.titulo).join(', '))));
+      const novas = musicasLiberadasPor(licao);
+      if (novas.length) extra = el('div', { class: 'resultado-liberou' }, icone('musica'), el('div', null, el('b', null, 'Você já sabe todos os acordes de'), el('span', null, novas.map((m) => m.titulo).join(', '))));
     }
     telaResultado(palco, Object.assign({ estrelas: estrelasN, ganho, extra, botoes: botoesFim(palco, licao, () => rodarLicao(licao, palco)) }, o));
     if (window.App) window.App.atualizar();
@@ -524,6 +525,14 @@
     });
     return b;
   }
+  function opcaoConfig(chave, rotulo) {
+    const id = 'op-' + chave + '-' + Math.random().toString(36).slice(2, 7);
+    const chk = el('input', { type: 'checkbox', id, checked: !!E.dados.config[chave] });
+    chk.addEventListener('change', () => { E.dados.config[chave] = chk.checked; E.salvar(); });
+    return el('label', { class: 'opcao', for: id }, chk, el('span', null, rotulo));
+  }
+  function opcoesBanda() { return [opcaoConfig('banda', 'Tocar com a banda (bateria e baixo)'), opcaoConfig('fone', 'Estou de fone de ouvido')]; }
+  const AVISO_FONE = 'Sem fone, o som da banda entra no microfone: o app confere só os acordes e fica mais generoso. Com fone de ouvido ele confere também cada batida.';
   function opcaoMetronomo() {
     const id = 'metro-' + Math.random().toString(36).slice(2, 7);
     const chk = el('input', { type: 'checkbox', id, checked: E.dados.config.volumeClique > 0 });
@@ -559,7 +568,8 @@
       el('div', { class: 'preparo-info' }, el('span', null, licao.bpm + ' batidas por minuto'), el('span', null, (ritmo ? licao.compassos : C.blocosDe(licao.compassos, licao.repetir).total / 4) + ' compassos')),
       ids.length === 2 ? caixaDica(C.dicaTroca(ids[0], ids[1])) : null,
       el('div', { class: 'linha-botoes' }, botaoOuvir(() => ({ padrao: licao.padrao, bpm: licao.bpm, ids, capo: capoEfetivo(capoLicao) }))),
-      el('div', { class: 'opcoes' }, opcaoMetronomo(), opcaoCapo(capoLicao, () => { M.pararExemplo(); licaoPista(palco, licao); })),
+      el('div', { class: 'opcoes' }, opcaoMetronomo(), opcaoCapo(capoLicao, () => { M.pararExemplo(); licaoPista(palco, licao); }), ...(ritmo ? [] : opcoesBanda())),
+      ritmo ? null : el('p', { class: 'nota' }, AVISO_FONE),
       semCalib ? el('p', { class: 'nota' }, 'Dica: faça a lição "Sincronize o app" para o tempo das batidas ser medido com precisão.') : null,
       btComecar));
     palco.aoFechar(() => M.pararExemplo());
@@ -570,8 +580,8 @@
       const { capo, blocos, total } = montar();
       const r = await window.Pista.rodarPista(palco, {
         blocos, total, padrao: licao.padrao, bpm: licao.bpm, capo,
-        avaliarAcordes: blocos.length > 0, avaliarRitmo: true, abafado: ritmo && !licao.acorde,
-        metronomo: E.dados.config.volumeClique > 0, candidatos: [...new Set(blocos.map((b) => b.id))].concat(candidatosPara(ids[0] || 'Em')).filter((v, i, a) => a.indexOf(v) === i),
+        avaliarAcordes: blocos.length > 0, avaliarRitmo: ritmo || !E.dados.config.banda || E.dados.config.fone, abafado: ritmo && !licao.acorde,
+        banda: !ritmo && E.dados.config.banda, metronomo: E.dados.config.volumeClique > 0, candidatos: [...new Set(blocos.map((b) => b.id))].concat(candidatosPara(ids[0] || 'Em')).filter((v, i, a) => a.indexOf(v) === i),
         acordeRobo: 'Em'
       });
       M.desligarMicrofone();
@@ -608,6 +618,24 @@
     }));
     function salvarPref() { E.dados.config['musica-' + m.id] = pref; E.salvar(); }
 
+    const btPrevia = el('button', { class: 'bt bt-secundario' });
+    const desenharPrevia = (tocando) => { btPrevia.innerHTML = ''; btPrevia.append(icone(tocando ? 'fechar' : 'som'), tocando ? ' Parar' : ' Ouvir como fica'); };
+    desenharPrevia(false);
+    btPrevia.addEventListener('click', async () => {
+      if (M.bandaAtual) { M.pararBanda(); return; }
+      await M.garantirContexto();
+      const sec = m.secoes.find((x) => x.id === 'refrao') || m.secoes[0];
+      const trecho = C.blocosDaMusica(m, sec.id);
+      const nv = C.NIVEIS_RITMO.find((n) => n.id === pref.nivel) || C.NIVEIS_RITMO[1];
+      desenharPrevia(true);
+      M.banda(M.agora() + 0.3, 60 / Math.round(m.bpm * pref.velocidade), trecho.blocos, trecho.total, capoEfetivo(m.capo), { slotsGuia: C.PADROES[nv.padrao || m.padrao].slots, aoFim: () => desenharPrevia(false) });
+    });
+    palco.aoFechar(() => M.pararBanda());
+    const faltando = E.acordesFaltando(m);
+    const caixaFalta = faltando.length ? el('div', { class: 'falta-acordes' },
+      el('b', null, faltando.length === 1 ? 'Falta 1 acorde para esta música' : 'Faltam ' + faltando.length + ' acordes para esta música'),
+      el('span', null, 'Aprenda cada um em 2 minutos. Você também pode tocar agora mesmo e ir pegando no caminho.'),
+      el('div', { class: 'linha-botoes' }, ...faltando.map((id) => el('button', { class: 'bt bt-pequeno', onclick: () => rodarLicao(C.LICOES.find((l) => l.tipo === 'acorde' && l.acorde === id)) }, 'Aprender ' + T.ACORDES[id].nome)))) : null;
     const totalCompassos = C.blocosDaMusica(m).total / 4;
     const minutos = (totalCompassos * 4 * 60 / m.bpm) / 60;
     palco.corpo.append(el('div', { class: 'musica-pagina' },
@@ -615,11 +643,14 @@
         el('div', null, el('h2', null, m.titulo), el('div', { class: 'musica-artista' }, m.artista)),
         prog.estrelas ? estrelas(prog.estrelas) : null),
       el('p', { class: 'ac-dica' }, m.nota),
+      caixaFalta,
       el('div', { class: 'rotulo' }, 'Acordes' + (m.capo && capo ? ` · capotraste na casa ${m.capo}` : '')),
       chipsAcordes(ids, capo),
-      el('div', { class: 'opcoes' }, opcaoCapo(m.capo, () => paginaMusica(palco, m)), opcaoMetronomo()),
+      el('div', { class: 'opcoes' }, ...opcoesBanda(), opcaoCapo(m.capo, () => paginaMusica(palco, m)), opcaoMetronomo()),
+      el('p', { class: 'nota' }, AVISO_FONE),
       el('div', { class: 'rotulo' }, 'Ritmo'), niveis,
       el('div', { class: 'rotulo' }, 'Velocidade'), el('div', { class: 'linha-range' }, vel, velTxt),
+      el('div', { class: 'linha-botoes' }, btPrevia, E.dados.foco === m.id ? null : el('button', { class: 'bt bt-secundario', onclick: () => { E.dados.foco = m.id; E.salvar(); aviso('Esta agora é a sua música na tela inicial.', 'ok'); } }, 'Escolher como minha música')),
       el('div', { class: 'rotulo' }, 'Treine por partes'),
       el('div', { class: 'secoes' }, ...m.secoes.map((s) => el('button', { class: 'secao', onclick: () => tocarMusica(palco, m, s.id, pref) },
         el('div', null, el('b', null, s.nome), el('span', null, s.compassos.split('|').map((c) => c.trim().split(/\s+/).map((i) => T.ACORDES[i].nome).join(' ')).join(' · '))),
@@ -645,8 +676,8 @@
     const ids = [...new Set(blocos.map((b) => b.id))];
     const r = await window.Pista.rodarPista(palco, {
       blocos, total, padrao, bpm, capo, marcas: secaoId ? [] : marcas,
-      avaliarAcordes: true, avaliarRitmo: nivel.id !== 'facil',
-      metronomo: E.dados.config.volumeClique > 0, candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, a) => a.indexOf(v) === i)
+      avaliarAcordes: true, avaliarRitmo: nivel.id !== 'facil' && (!E.dados.config.banda || E.dados.config.fone),
+      banda: E.dados.config.banda, metronomo: E.dados.config.volumeClique > 0, candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, a) => a.indexOf(v) === i)
     });
     M.desligarMicrofone();
     if (!r) { paginaMusica(palco, m); return; }
@@ -655,6 +686,7 @@
     if (r.avaliouRitmo) linhas.push(['Batidas no tempo', `${r.perf + r.bom} de ${r.nBatidas}`]);
     linhas.push(['Velocidade', Math.round(pref.velocidade * 100) + '%'], ['Nota', Math.round(r.pct * 100) + '%']);
     const dicas = window.Pista.dicasDoResultado(r);
+    if (E.dados.config.banda && !E.dados.config.fone && nivel.id !== 'facil') dicas.push('Sem fone, o app conferiu só os acordes. Com fone de ouvido ele confere também as batidas.');
     if (!secaoId && r.estrelas > 0 && pref.velocidade < 1) dicas.push('Próximo passo: suba a velocidade aos poucos até 100%.');
     if (!secaoId && r.estrelas > 0 && nivel.id !== 'original') dicas.push('Quando ficar fácil, troque o ritmo para "Completo".');
     telaResultado(palco, {

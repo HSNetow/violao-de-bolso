@@ -91,8 +91,9 @@
       // ---------- Tempo ----------
       const tInicio = M.agora() + 0.6;
       const t0 = tInicio + contagem * batida;
-      const nCliques = cfg.metronomo ? contagem + Math.ceil(cfg.total) : contagem;
-      const pararMetronomo = M.metronomo(tInicio, batida, nCliques, 4);
+      const nCliques = cfg.metronomo && !cfg.banda ? contagem + Math.ceil(cfg.total) : contagem;
+      const pararMetronomo = M.metronomo(tInicio, batida, nCliques, 4, cfg.banda ? 0.35 : 0);
+      const pararBanda = cfg.banda && blocos.length ? M.banda(t0, batida, blocos, cfg.total, capo, {}) : null;
 
       // ---------- Robô (modo demonstração) ----------
       if (M.simulado) {
@@ -335,6 +336,7 @@
         rodando = false;
         cancelAnimationFrame(raf);
         pararMetronomo();
+        if (pararBanda) pararBanda();
         M.pararRobo();
         M.ouvQuadro.delete(offQuadro);
         M.ouvAtaque.delete(offAtaque);

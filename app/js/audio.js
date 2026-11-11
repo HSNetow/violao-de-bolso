@@ -298,6 +298,86 @@ registerProcessor('ataques-violao', ProcAtaques);`;
       ex.timer = setTimeout(() => { if (this.exemplo === ex) this.pararExemplo(); }, (compassos * 4 * batida + 0.9) * 1000);
     },
 
+    // ---------- Banda de acompanhamento (bateria + baixo, e violão guia opcional) ----------
+    bandaAtual: null,
+    pararBanda() {
+      const b = this.bandaAtual;
+      if (!b) return;
+      this.bandaAtual = null;
+      b.cancelado = true;
+      clearTimeout(b.timer);
+      try { b.saida.gain.setTargetAtTime(0, this.ctx.currentTime, 0.03); } catch (e) { /* ok */ }
+      setTimeout(() => { try { b.saida.disconnect(); } catch (e) { /* ok */ } }, 400);
+      if (b.aoFim) b.aoFim();
+    },
+    ruido() {
+      if (!this.bufRuidoLongo) {
+        const n = Math.round(this.ctx.sampleRate * 0.25);
+        const b = this.ctx.createBuffer(1, n, this.ctx.sampleRate), d = b.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+        this.bufRuidoLongo = b;
+      }
+      const s = this.ctx.createBufferSource(); s.buffer = this.bufRuidoLongo;
+      return s;
+    },
+    // blocos: [{id, inicio, dur}] em tempos; o: {volume, slotsGuia, aoFim}
+    banda(t0, batida, blocos, total, capo, o) {
+      this.pararBanda();
+      const ctx = this.ctx, op = o || {};
+      const saida = ctx.createGain();
+      saida.gain.value = op.volume === undefined ? 0.85 : op.volume;
+      saida.connect(ctx.destination);
+      const b = { saida, cancelado: false, aoFim: op.aoFim, timer: 0 };
+      this.bandaAtual = b;
+      const env = (g, t, pico, dur) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(pico, t + 0.005); g.gain.exponentialRampToValueAtTime(0.0008, t + dur); };
+      const bumbo = (t) => { const os = ctx.createOscillator(), g = ctx.createGain(); os.frequency.setValueAtTime(140, t); os.frequency.exponentialRampToValueAtTime(48, t + 0.11); env(g, t, 0.9, 0.2); os.connect(g); g.connect(saida); os.start(t); os.stop(t + 0.22); };
+      const caixa = (t) => { const n = this.ruido(), fl = ctx.createBiquadFilter(), g = ctx.createGain(); fl.type = 'bandpass'; fl.frequency.value = 1900; fl.Q.value = 0.6; env(g, t, 0.45, 0.14); n.connect(fl); fl.connect(g); g.connect(saida); n.start(t); n.stop(t + 0.16); };
+      const chimbal = (t, v) => { const n = this.ruido(), fl = ctx.createBiquadFilter(), g = ctx.createGain(); fl.type = 'highpass'; fl.frequency.value = 7500; env(g, t, v, 0.04); n.connect(fl); fl.connect(g); g.connect(saida); n.start(t); n.stop(t + 0.06); };
+      const baixo = (t, midi, dur) => {
+        const fq = T.freqDeMidi(midi), g = ctx.createGain(), fl = ctx.createBiquadFilter();
+        fl.type = 'lowpass'; fl.frequency.value = 700;
+        const o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), g2 = ctx.createGain();
+        o1.type = 'triangle'; o1.frequency.value = fq; o2.type = 'sawtooth'; o2.frequency.value = fq; g2.gain.value = 0.35;
+        env(g, t, 0.55, dur);
+        o1.connect(fl); o2.connect(g2); g2.connect(fl); fl.connect(g); g.connect(saida);
+        o1.start(t); o2.start(t); o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
+      };
+      const notaBaixo = (id) => { const ac = T.ACORDES[id]; for (let c = 0; c < 6; c++) if (ac.casas[c] >= 0) return T.CORDAS_SOLTAS[c] + ac.casas[c] + (capo || 0); return 40; };
+      const blocoEm = (tb) => blocos.find((x) => tb >= x.inicio - 1e-6 && tb < x.inicio + x.dur - 1e-6);
+      const passos = Math.round(total * 2);
+      let k = 0, guiaAnt = null;
+      const passo = () => {
+        if (b.cancelado) return;
+        const limite = ctx.currentTime + 0.3;
+        while (k < passos && t0 + k * batida / 2 < limite) {
+          const t = Math.max(ctx.currentTime, t0 + k * batida / 2), tb = k / 2, i = k % 8;
+          if (i === 0 || i === 4) bumbo(t);
+          if (i === 2 || i === 6) caixa(t);
+          chimbal(t, i % 2 === 0 ? 0.1 : 0.05);
+          const bl = blocoEm(tb);
+          if (bl) {
+            const inicioBloco = Math.abs(tb - bl.inicio) < 1e-6;
+            if (inicioBloco || i === 0 || i === 4) baixo(t, notaBaixo(bl.id), batida * (i % 4 === 0 ? 1.6 : 0.9));
+            if (op.slotsGuia && (op.slotsGuia[i] !== '-' || inicioBloco)) {
+              const dir = op.slotsGuia[i] === 'C' ? 'cima' : 'baixo';
+              const notas = T.ACORDES[bl.id].casas.map((c, st) => (c >= 0 ? T.CORDAS_SOLTAS[st] + c + (capo || 0) : null));
+              const src = ctx.createBufferSource(), g = ctx.createGain();
+              src.buffer = this.bufferDeBatida(notas, dir, dir === 'baixo' ? 0.7 : 0.4, 0);
+              g.gain.value = 0.75;
+              src.connect(g); g.connect(saida); src.start(t);
+              if (guiaAnt) { try { guiaAnt.stop(t + 0.02); } catch (e) { /* ok */ } }
+              guiaAnt = src;
+            }
+          }
+          k++;
+        }
+        if (k < passos) b.timer = setTimeout(passo, 60);
+        else b.timer = setTimeout(() => { if (this.bandaAtual === b) this.pararBanda(); }, Math.max(0, t0 + total * batida - ctx.currentTime + 0.8) * 1000);
+      };
+      passo();
+      return () => { if (this.bandaAtual === b) this.pararBanda(); };
+    },
+
     // ---------- Robô violonista (modo demonstração) ----------
     robo: { timers: [] },
     pararRobo() {

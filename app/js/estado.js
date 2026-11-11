@@ -17,7 +17,8 @@
     metaMinutos: 10,
     metaBatidaEm: '',
     conquistas: {},      // id -> data
-    config: { latencia: null, volumeClique: 0.5, sensibilidade: 1, temCapo: true, demo: false },
+    config: { latencia: null, volumeClique: 0.5, sensibilidade: 1, temCapo: true, demo: false, banda: true, fone: false },
+    foco: null,
     ritmo: { degrau: 0, bpm: 50 },
     treinoDia: { data: '', feitos: [false, false, false], bonus: false },
     boasVindas: false,
@@ -164,6 +165,7 @@
   // ---------- Desbloqueio ----------
   function licaoDesbloqueada(id) {
     const i = C.LICOES.findIndex((l) => l.id === id);
+    if (i >= 0 && C.LICOES[i].tipo === 'acorde') return true; // acordes ficam sempre abertos
     if (i <= 0) return true;
     if (concluida(id)) return true;
     return concluida(C.LICOES[i - 1].id);
@@ -172,7 +174,8 @@
     const u = C.UNIDADES.find((x) => x.id === uid);
     return u.licoes.every((l) => concluida(l.id));
   }
-  function musicaDesbloqueada(m) { return m.requer.every(concluida); }
+  function acordesFaltando(m) { const ap = new Set(acordesAprendidos()); return m.acordes.filter((id) => !ap.has(id)); }
+  function musicaDesbloqueada(m) { return acordesFaltando(m).length === 0; }
 
   // "Pular unidade": completar o desafio libera tudo antes dele
   function pularAte(licaoId) {
@@ -281,7 +284,7 @@
     get dados() { return dados; },
     salvar, hoje, sequencia, nivelAtual, ganharXP, somarTempo, tempoHoje,
     licao, concluida, registrarLicao, registrarMusica, registrarTroca, recordeTroca,
-    licaoDesbloqueada, unidadeConcluida, musicaDesbloqueada, pularAte, acordesAprendidos,
+    acordesFaltando, licaoDesbloqueada, unidadeConcluida, musicaDesbloqueada, pularAte, acordesAprendidos,
     ritmoAtual, avancarRitmo, treinoDia, marcarTreino, parFraco,
     verificarConquistas, exportar, importar, zerar,
     aoMudar(f) { ouvintes.add(f); return () => ouvintes.delete(f); }

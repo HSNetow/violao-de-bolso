@@ -82,6 +82,9 @@ Para refazer os ícones depois de mudar o `app/icone.svg`, ajuste e rode
 - **Trilha** com 8 unidades e 48 lições: conhecer o violão, afinar, sincronizar, palhetada para
   baixo, 17 acordes (incluindo F e Bm sem pestana e os formatos de Wonderwall), troca de 1 minuto,
   palhetada para cima, ritmo universal (↓ ↓↑ ↑↓↑) e um desafio no fim de cada unidade.
+- **Banda de acompanhamento:** nas músicas você toca junto com bateria e baixo. No ritmo Fácil,
+  uma batida por acorde já soa como música. Com fone de ouvido o app confere também as batidas.
+- **Sua música:** a tela inicial mostra a música escolhida, os acordes que faltam e o próximo passo.
 - **Treino do dia:** 3 exercícios curtos e adaptativos. A troca de 1 minuto no seu par mais lento, a
   "escada do ritmo" (↓↓↓↓ → ↓↑↓↑ → ↓ ↓↑ ↓ ↓↑ → ↓ ↓↑ ↑↓↑, de 50 bpm para cima, subindo 5 bpm a cada
   85% de acerto) e a troca dentro do ritmo.

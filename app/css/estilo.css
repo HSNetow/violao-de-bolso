@@ -481,3 +481,13 @@ select { background: var(--superficie-2); border: 1px solid var(--linha); border
 .escada-degraus span { font-size: 0.7rem; color: var(--texto-2); }
 .dica-troca { display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--bom) 12%, var(--superficie)); border: 1px solid color-mix(in srgb, var(--bom) 40%, var(--linha)); font-size: 0.9rem; }
 .dica-troca .ico { color: var(--bom); margin-top: 1px; }
+
+/* ---------- Sua música ---------- */
+.cartao-foco { display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: var(--raio); border: 2px solid var(--acento); background: linear-gradient(135deg, color-mix(in srgb, var(--acento) 20%, var(--superficie)), var(--superficie)); }
+.cartao-foco h2 { font-family: var(--fonte-acorde); font-size: 2rem; line-height: 1; }
+.cartao-foco p { color: var(--texto-2); font-size: 0.9rem; }
+.tag.sabe { border-color: var(--ok); color: var(--ok); }
+.falta-acordes { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 12px; border: 1px dashed var(--acento); background: var(--superficie); }
+.falta-acordes span { color: var(--texto-2); font-size: 0.86rem; }
+.unidade .alternar { align-self: flex-start; }
+.conteudo > h3 { margin: 10px 0 -4px; }
