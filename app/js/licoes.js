@@ -604,6 +604,7 @@
   function paginaMusica(palco, m) {
     palco.limpar();
     palco.tituloEl.textContent = m.titulo;
+    if (m.gravacao) { paginaGravacao(palco, m); return; }
     const prog = E.dados.musicas[m.id] || { partes: {} };
     const pref = E.dados.config['musica-' + m.id] || { velocidade: 0.7, nivel: 'medio' };
     const ids = [...new Set(m.secoes.flatMap((s) => s.compassos.split(/[|\s]+/).filter(Boolean)))];
@@ -804,6 +805,169 @@
       estrelas: r.estrelas, ganho, linhas, dicas,
       titulo: !trecho && r.estrelas > 0 ? 'Você tocou ' + m.titulo + ' com a gravação!' : null,
       botoes: [{ texto: 'Repetir', primario: true, acao: () => tocarGravacao(palco, m, blob, trecho, pref) }, { texto: 'Voltar para a música', acao: () => paginaMusica(palco, m) }]
+    });
+    if (window.App) window.App.atualizar();
+  }
+
+  // ---------- A música como uma escada de 4 etapas, tocada com a gravação ----------
+  const ETAPAS = [
+    { id: 'e1', nome: 'Uma batida por acorde', padrao: 'livre', nivel: 'facil', desc: 'Só a troca: uma batida para baixo cada vez que o acorde muda. O resto do tempo você escuta a música.' },
+    { id: 'e2', nome: 'Para baixo em cada tempo', padrao: 'q4', nivel: 'medio', desc: 'A mão desce junto com o pulso da música: 1, 2, 3, 4.' },
+    { id: 'e3', nome: 'Entra a batida para cima', padrao: 'ddu', nivel: 'medio', desc: 'A mão agora sobe tocando depois dos tempos 2 e 4.' },
+    { id: 'e4', nome: 'O ritmo da música', padrao: 'pop', nivel: 'original', desc: 'Baixo, baixo-cima, cima-baixo-cima. No tempo 3 a mão desce sem encostar nas cordas. É assim que se toca a música.' }
+  ];
+
+  // pulso real da gravação: divide cada acorde em 2, 4 ou 8 tempos
+  function gradeDaGravacao(g, aj) {
+    const segs = [], tempos = [];
+    let cont = 0;
+    g.acordes.forEach(([t, id], i) => {
+      if (!id) return;
+      const a = t + aj, b = (i + 1 < g.acordes.length ? g.acordes[i + 1][0] : g.duracao) + aj;
+      if (g.marcas.some((mk) => Math.abs(mk.ini - t) < 0.05)) cont = 0;
+      const bruto = (b - a) / g.batida;
+      const nb = bruto < 3 ? 2 : bruto < 6 ? 4 : 8;
+      segs.push({ id, a, b });
+      for (let k = 0; k < nb; k++) { tempos.push({ t: a + k * (b - a) / nb, dt: (b - a) / nb, n: cont % 4 + 1, k }); cont++; }
+    });
+    return { segs, tempos };
+  }
+
+  function etapaLiberada(m, i) {
+    if (i === 0) return true;
+    const partes = (E.dados.musicas[m.id] || {}).partes || {};
+    return Object.keys(partes).some((k) => k.startsWith(ETAPAS[i - 1].id + '-') && partes[k] > 0);
+  }
+  function estrelasDaEtapa(m, et) {
+    const partes = (E.dados.musicas[m.id] || {}).partes || {};
+    return Math.max(0, ...Object.keys(partes).filter((k) => k.startsWith(et.id + '-')).map((k) => partes[k]));
+  }
+
+  function paginaGravacao(palco, m) {
+    const g = m.gravacao, fmt = window.UI.formatarTempo;
+    const pref = Object.assign({ velGrav: 1, ajuste: 0 }, E.dados.config['musica-' + m.id] || {});
+    const guardar = () => { E.dados.config['musica-' + m.id] = pref; E.salvar(); };
+    const partes = (E.dados.musicas[m.id] || {}).partes || {};
+    const faltando = E.acordesFaltando(m);
+    const status = el('p', { class: 'nota' }, 'Procurando a gravação neste aparelho...');
+    const escada = el('ol', { class: 'etapas' });
+    const arq = el('input', { type: 'file', accept: 'audio/*', id: 'grav-arq-' + m.id, hidden: true });
+    const btArq = el('button', { class: 'bt bt-secundario bt-pequeno', onclick: () => arq.click() }, 'Escolher o arquivo de áudio');
+    const vel = el('select', { id: 'grav-vel-' + m.id }, ...[[1, 'Velocidade normal'], [0.85, '85% (mais devagar)'], [0.75, '75% (bem devagar)']].map(([v, t]) => el('option', { value: String(v), selected: pref.velGrav === v }, t)));
+    vel.addEventListener('change', () => { pref.velGrav = Number(vel.value); guardar(); });
+    const aj = el('input', { type: 'range', id: 'grav-aj-' + m.id, min: '-1', max: '1', step: '0.1', value: String(pref.ajuste) });
+    const ajTxt = el('output', { for: aj.id });
+    const mostrarAj = () => { const v = Number(aj.value); ajTxt.textContent = v === 0 ? 'no ponto' : (v < 0 ? (-v).toFixed(1) + ' s antes' : v.toFixed(1) + ' s depois'); };
+    mostrarAj();
+    aj.addEventListener('input', () => { pref.ajuste = Number(aj.value); mostrarAj(); guardar(); });
+
+    function montar(blob) {
+      status.textContent = 'Você toca junto com a gravação original. Use fone de ouvido para o app ouvir só o seu violão.';
+      btArq.textContent = 'Trocar o arquivo';
+      escada.innerHTML = '';
+      const atual = ETAPAS.findIndex((et, i) => etapaLiberada(m, i) && !estrelasDaEtapa(m, et));
+      ETAPAS.forEach((et, i) => {
+        const livre = etapaLiberada(m, i), est = estrelasDaEtapa(m, et);
+        const trechos = g.marcas.concat([{ nome: 'Música inteira', ini: 0, fim: g.duracao, inteira: true }]);
+        escada.append(el('li', { class: 'etapa' + (livre ? '' : ' bloqueada') + (i === atual ? ' atual' : '') + (est ? ' feita' : '') },
+          el('div', { class: 'etapa-topo' },
+            el('span', { class: 'tp-num' }, livre ? String(i + 1) : icone('cadeado')),
+            el('div', null, el('b', null, et.nome), el('span', null, et.desc)),
+            est ? estrelas(est) : null),
+          et.padrao !== 'livre' ? setasPadrao(et.padrao) : null,
+          livre ? el('div', { class: 'etapa-trechos' },
+            ...trechos.map((tr) => el('button', { class: 'trecho' + (tr.inteira ? ' inteira' : ''), onclick: () => tocarEtapa(palco, m, blob, et, tr.inteira ? null : tr, pref) },
+              el('b', null, tr.nome), el('span', null, tr.inteira ? fmt(g.duracao) : fmt(tr.ini)), estrelas(partes[et.id + '-' + (tr.inteira ? 'inteira' : tr.nome)] || 0))),
+            et.padrao !== 'livre' ? botaoOuvir(() => ({ padrao: et.padrao, bpm: Math.round(60 / g.batida * pref.velGrav), ids: [m.acordes[0]], capo: g.capo || 0 })) : null)
+            : el('p', { class: 'nota' }, 'Libera quando você passar em algum trecho da etapa ' + i + '.')));
+      });
+    }
+    arq.addEventListener('change', async () => { const fl = arq.files[0]; if (!fl) return; try { await Gravacoes.gravar(m.id, fl); } catch (e) { aviso('Não consegui guardar o arquivo; ele vale só para agora.'); } montar(fl); });
+    Gravacoes.obter(m.id).then((b) => { if (b) montar(b); else status.textContent = 'Escolha o arquivo de áudio desta música no seu aparelho. Ele fica guardado só aqui e não é enviado para a internet.'; });
+    palco.aoFechar(() => M.pararExemplo());
+
+    palco.corpo.append(el('div', { class: 'musica-pagina' },
+      el('div', { class: 'musica-cabeca' }, el('div', null, el('h2', null, m.titulo), el('div', { class: 'musica-artista' }, m.artista))),
+      faltando.length ? el('div', { class: 'falta-acordes' },
+        el('b', null, faltando.length === 1 ? 'Falta 1 acorde para esta música' : 'Faltam ' + faltando.length + ' acordes para esta música'),
+        el('div', { class: 'linha-botoes' }, ...faltando.map((id) => el('button', { class: 'bt bt-pequeno', onclick: () => rodarLicao(C.LICOES.find((l) => l.tipo === 'acorde' && l.acorde === id)) }, 'Aprender ' + T.ACORDES[id].nome)))) : null,
+      chipsAcordes(m.acordes, g.capo || 0),
+      el('div', { class: 'rotulo' }, 'O caminho até tocar a música'),
+      status, escada,
+      el('div', { class: 'config' },
+        el('div', { class: 'campo' }, el('label', { for: vel.id }, 'Velocidade da gravação'), vel),
+        el('div', { class: 'campo' }, el('label', { for: aj.id }, 'Os acordes na tela chegam'), el('div', { class: 'linha-range' }, aj, ajTxt)),
+        el('div', { class: 'opcoes' }, opcaoConfig('fone', 'Estou de fone de ouvido')),
+        btArq, arq)));
+  }
+
+  async function tocarEtapa(palco, m, blob, et, trecho, pref) {
+    const audio = new Audio();
+    const url = URL.createObjectURL(blob);
+    audio.src = url; audio.preload = 'auto'; audio.muted = true;
+    const destravar = audio.play().then(() => { audio.pause(); }).catch(() => {});
+    M.pararBanda(); M.pararExemplo();
+    palco.limpar();
+    const ok = await ligarMic(palco, () => paginaMusica(palco, m));
+    if (!ok) { URL.revokeObjectURL(url); return; }
+    await destravar;
+    const g = m.gravacao, taxa = pref.velGrav || 1;
+    const ini = trecho ? trecho.ini : 0, fim = trecho ? trecho.fim : g.duracao;
+    const { segs, tempos } = gradeDaGravacao(g, pref.ajuste || 0);
+    const blocos = [];
+    segs.forEach((sg) => { const a = Math.max(sg.a, ini), b = Math.min(sg.b, fim); if (b - a > 0.3) blocos.push({ id: sg.id, inicio: a - ini, dur: b - a }); });
+    const dentro = tempos.filter((tp) => tp.t >= ini - 0.01 && tp.t < fim - 0.05);
+    const slots = C.PADROES[et.padrao].slots;
+    const batidas = [], fantasmas = [];
+    dentro.forEach((tp) => {
+      const si = (tp.k % 4) * 2;
+      if (et.padrao === 'livre') { if (tp.k === 0) batidas.push({ tempo: tp.t - ini, dir: 'baixo', slot: 0 }); return; }
+      [0, 1].forEach((meio) => {
+        const sl = slots[si + meio], t = tp.t - ini + meio * tp.dt / 2;
+        if (sl === '-') fantasmas.push({ tempo: t, dir: meio ? 'cima' : 'baixo' });
+        else batidas.push({ tempo: t, dir: sl === 'B' ? 'baixo' : 'cima', slot: si + meio });
+      });
+    });
+    audio.muted = false; audio.playbackRate = taxa;
+    try { audio.currentTime = ini; } catch (e) { /* ajusta ao tocar */ }
+    let tPlay = 0, tocando = false, timer = 0;
+    const relogio = () => (tocando ? audio.currentTime - ini : (M.agora() - tPlay) * taxa);
+    palco.tituloEl.textContent = 'Etapa ' + (ETAPAS.indexOf(et) + 1) + ' · ' + (trecho ? trecho.nome : 'música inteira');
+    const ids = [...new Set(blocos.map((x) => x.id))];
+    const fone = !!E.dados.config.fone;
+    const r = await window.Pista.rodarPista(palco, {
+      blocos, total: fim - ini, padrao: et.padrao, bpm: 60 * taxa, capo: g.capo || 0,
+      batidas, fantasmas, grade: dentro.map((tp) => ({ t: tp.t - ini, n: tp.n })), zoom: 1.7,
+      avaliarAcordes: true, avaliarRitmo: fone, metronomo: false, semGrade: true, relogio,
+      marcas: trecho ? [] : g.marcas.map((mk) => ({ nome: mk.nome, inicio: mk.ini })),
+      candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, arr) => arr.indexOf(v) === i),
+      aoIniciar: (t0) => {
+        tPlay = t0;
+        timer = setTimeout(() => { if (Math.abs(audio.currentTime - ini) > 0.05) audio.currentTime = ini; audio.play().then(() => { tocando = true; }).catch(() => aviso('O navegador bloqueou o áudio. Toque em Repetir.', 'erro')); }, Math.max(0, (t0 - M.agora()) * 1000));
+      },
+      aoLimpar: () => { clearTimeout(timer); audio.pause(); URL.revokeObjectURL(url); }
+    });
+    M.desligarMicrofone();
+    if (!r) { paginaMusica(palco, m); return; }
+    const iEt = ETAPAS.indexOf(et);
+    const liberouAntes = iEt + 1 < ETAPAS.length && etapaLiberada(m, iEt + 1);
+    const ganho = E.registrarMusica(m.id, et.id + '-' + (trecho ? trecho.nome : 'inteira'), r.estrelas, r.pct, et.nivel, taxa);
+    if (!trecho && r.estrelas > 0) { const g2 = E.registrarMusica(m.id, null, r.estrelas, r.pct, et.nivel, taxa); ganho.xp += g2.xp; ganho.novasConquistas = ganho.novasConquistas.concat(g2.novasConquistas); }
+    const liberou = !liberouAntes && iEt + 1 < ETAPAS.length && etapaLiberada(m, iEt + 1);
+    const linhas = [['Acordes certos', r.okBlocos + ' de ' + r.nBlocos]];
+    if (r.avaliouRitmo) linhas.push(['Batidas no tempo', (r.perf + r.bom) + ' de ' + r.nBatidas]);
+    linhas.push(['Nota', Math.round(r.pct * 100) + '%']);
+    const dicas = window.Pista.dicasDoResultado(r);
+    if (!fone) dicas.push('Sem fone, a gravação entra no microfone: o app conferiu só os acordes e a nota fica pouco confiável.');
+    if (!r.estrelas) dicas.push('Tente a 85% ou 75% da velocidade, ou volte um trecho menor.');
+    const botoes = [];
+    if (r.estrelas > 0 && iEt + 1 < ETAPAS.length) botoes.push({ texto: 'Próxima etapa: ' + ETAPAS[iEt + 1].nome, primario: true, acao: () => tocarEtapa(palco, m, blob, ETAPAS[iEt + 1], trecho, pref) });
+    botoes.push({ texto: 'Repetir', primario: !botoes.length, acao: () => tocarEtapa(palco, m, blob, et, trecho, pref) }, { texto: 'Voltar para a música', acao: () => paginaMusica(palco, m) });
+    telaResultado(palco, {
+      estrelas: r.estrelas, ganho, linhas, dicas,
+      titulo: !trecho && r.estrelas > 0 && iEt === ETAPAS.length - 1 ? 'Você tocou ' + m.titulo + ' inteira, no ritmo da música!' : null,
+      extra: liberou ? el('div', { class: 'resultado-liberou' }, icone('check'), el('div', null, el('b', null, 'Etapa ' + (iEt + 2) + ' liberada'), el('span', null, ETAPAS[iEt + 1].nome))) : null,
+      botoes
     });
     if (window.App) window.App.atualizar();
   }

@@ -495,3 +495,20 @@ select { background: var(--superficie-2); border: 1px solid var(--linha); border
 /* ---------- Gravação original ---------- */
 .gravacao { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--raio); border: 2px solid var(--ok); background: color-mix(in srgb, var(--ok) 8%, var(--superficie)); }
 .gravacao .secao .ico { color: var(--ok); flex: none; }
+
+/* ---------- Etapas da música ---------- */
+.etapas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.etapa { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: var(--raio); background: var(--superficie); border: 2px solid var(--linha); }
+.etapa.atual { border-color: var(--acento); }
+.etapa.feita { border-color: color-mix(in srgb, var(--ok) 60%, var(--linha)); }
+.etapa.bloqueada { opacity: 0.55; }
+.etapa-topo { display: flex; align-items: flex-start; gap: 12px; }
+.etapa-topo > div { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.etapa-topo > div span { color: var(--texto-2); font-size: 0.86rem; }
+.etapa-topo .tp-num .ico { width: 18px; height: 18px; }
+.etapa.feita .tp-num { background: var(--ok); color: #06240f; }
+.etapa-trechos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.trecho { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 8px 12px; border-radius: 10px; background: var(--superficie-2); border: 1px solid var(--linha); }
+.trecho span { color: var(--texto-2); font-size: 0.74rem; }
+.trecho.inteira { border-color: var(--acento); }
+.trecho .estrelas .ico { width: 12px; height: 12px; }

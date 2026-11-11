@@ -48,7 +48,7 @@
       const capo = cfg.capo || 0;
       const blocos = (cfg.blocos || []).map((b) => Object.assign({}, b, { quadros: 0, ok: 0, estado: null, viu: null }));
       const slots = C.PADROES[cfg.padrao].slots;
-      const { batidas, fantasmas } = gerarBatidas(slots, cfg.total, blocos);
+      const { batidas, fantasmas } = cfg.batidas ? { batidas: cfg.batidas.map((b) => Object.assign({ estado: null }, b)), fantasmas: cfg.fantasmas || [] } : gerarBatidas(slots, cfg.total, blocos);
       const batida = 60 / cfg.bpm;
       const contagem = 4;
       const candidatos = cfg.candidatos || [...new Set(blocos.map((b) => b.id))];
@@ -220,7 +220,7 @@
       function desenhar(tb) {
         g.clearRect(0, 0, W, H);
         const xToque = Math.max(56, W * 0.22);
-        const ppb = Math.max(44, Math.min(120, (W - xToque) / 5));
+        const ppb = Math.max(44, Math.min(120, (W - xToque) / 5)) * (cfg.zoom || 1);
         const x = (b) => xToque + (b - tb) * ppb;
         const temAcordes = blocos.length > 0;
         const yA = 14, hA = temAcordes ? Math.min(64, H * 0.36) : 0;
@@ -239,6 +239,15 @@
             g.fillText(String((b % 4) + 1), xb, H - 3);
             if (temColcheias) g.fillText('e', x(b + 0.5), H - 3);
           }
+        }
+        if (cfg.grade) for (const gb of cfg.grade) {
+          const xb = x(gb.t);
+          if (xb < -10 || xb > W + 10) continue;
+          g.strokeStyle = cor.linha; g.lineWidth = gb.n === 1 ? 2 : 1; g.globalAlpha = gb.n === 1 ? 0.9 : 0.45;
+          g.beginPath(); g.moveTo(xb, yA - 6); g.lineTo(xb, H - 16); g.stroke();
+          g.globalAlpha = 1;
+          g.fillStyle = cor.texto2; g.font = '600 11px ' + cor.fonteNome; g.textAlign = 'center';
+          g.fillText(String(gb.n), xb, H - 3);
         }
         // marcas de seção
         (cfg.marcas || []).forEach((m) => {
@@ -272,7 +281,7 @@
         // trilho das batidas
         caixa(4, yB, W - 8, hB, 10); g.fillStyle = cor.sup2; g.globalAlpha = 0.55; g.fill(); g.globalAlpha = 1;
         const tam = Math.min(15, hB * 0.3);
-        if (!cfg.semGrade) for (const f of fantasmas) {
+        for (const f of fantasmas) {
           const xf = x(f.tempo);
           if (xf < -20 || xf > W + 20) continue;
           g.fillStyle = cor.texto2; g.globalAlpha = 0.35;
@@ -296,7 +305,7 @@
         g.shadowBlur = 0;
         // a "mão": desce no tempo, sobe no "e", sem parar
         if (mostrarMao) {
-          const fase = 2 * Math.PI * tb;
+          const fase = 2 * Math.PI * (cfg.grade ? fracBatida(tb) : tb);
           const ym = yMeio + Math.sin(fase) * hB * 0.3;
           const descendo = Math.cos(fase) > 0;
           const xm = xToque - 26;
@@ -306,6 +315,17 @@
           g.fillText(descendo ? '↓' : '↑', xm, ym + 1);
           g.textBaseline = 'alphabetic';
         }
+      }
+
+      // posição dentro do tempo atual quando o pulso vem da gravação (tempos de tamanho variável)
+      let gi = 0;
+      function fracBatida(tb) {
+        const G = cfg.grade;
+        if (!G.length || tb < G[0].t) return 0;
+        while (gi + 1 < G.length && G[gi + 1].t <= tb) gi++;
+        while (gi > 0 && G[gi].t > tb) gi--;
+        const a = G[gi].t, b = gi + 1 < G.length ? G[gi + 1].t : a + 0.67;
+        return Math.min(0.999, Math.max(0, (tb - a) / (b - a)));
       }
 
       // ---------- Laço ----------
@@ -368,7 +388,7 @@
         blocos.filter((b) => b.estado === 'erro').forEach((b) => { errosPorAcorde[b.id] = (errosPorAcorde[b.id] || 0) + 1; });
         const silencioso = blocos.filter((b) => b.estado === 'erro' && b.ok === 0 && !b.viu).length;
         const porSlot = Array.from({ length: 8 }, () => ({ total: 0, erros: 0 }));
-        batidas.forEach((b) => { const i = Math.round((b.tempo % 4) * 2) % 8; porSlot[i].total++; if (b.estado !== 'perfeito' && b.estado !== 'bom') porSlot[i].erros++; });
+        batidas.forEach((b) => { const i = b.slot !== undefined ? b.slot : Math.round((b.tempo % 4) * 2) % 8; porSlot[i].total++; if (b.estado !== 'perfeito' && b.estado !== 'bom') porSlot[i].erros++; });
         const mediaDesvio = desvios.length ? desvios.reduce((a, b) => a + b, 0) / desvios.length : 0;
         resolver({
           pct, estrelas, pctAcordes, pctRitmo, perf, bom, perdidas: nB - perf - bom, extras, nBatidas: nB,
