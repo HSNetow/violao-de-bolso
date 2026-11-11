@@ -3,6 +3,9 @@
 App para aprender violão com o microfone conferindo seus acordes e o seu ritmo.
 Funciona no navegador do celular ou do computador. Não precisa de loja de aplicativos.
 
+**Abra no celular:** https://hsnetow.github.io/violao-de-bolso/
+(depois, no menu do navegador, use **Adicionar à tela inicial**)
+
 ## Como abrir
 
 ### No computador
