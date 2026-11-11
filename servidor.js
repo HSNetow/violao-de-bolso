@@ -69,6 +69,19 @@ function responder(req, res, protocolo) {
     res.end(corpo);
     return;
   }
+  if (url.pathname.startsWith('/gravacoes/')) {
+    const id = url.pathname.slice(11).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const pasta = path.join(__dirname, 'musicas-originais');
+    const tipos = { '.mp3': 'audio/mpeg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.ogg': 'audio/ogg', '.opus': 'audio/ogg', '.wav': 'audio/wav', '.flac': 'audio/flac' };
+    const chaves = { horse: ['horse'], knockin: ['knockin'], standbyme: ['stand'], letitbe: ['letitbe', 'let it be', 'let_it_be'], tempoperdido: ['tempo'], paisefilhos: ['pais'], hurt: ['hurt'], wonderwall: ['wonderwall'] }[id] || [];
+    let achado = null;
+    try { achado = fs.readdirSync(pasta).find((n) => tipos[path.extname(n).toLowerCase()] && chaves.some((c) => n.toLowerCase().includes(c))); } catch (e) { /* pasta não existe */ }
+    if (!id || !achado) { res.writeHead(404, { 'Content-Type': TIPOS['.txt'] }); res.end('Sem gravação'); return; }
+    const arq = path.join(pasta, achado);
+    res.writeHead(200, { 'Content-Type': tipos[path.extname(achado).toLowerCase()], 'Content-Length': fs.statSync(arq).size, 'Cache-Control': 'no-store' });
+    fs.createReadStream(arq).pipe(res);
+    return;
+  }
   let caminho = decodeURIComponent(url.pathname);
   if (caminho.endsWith('/')) caminho += 'index.html';
   const arquivo = path.normalize(path.join(RAIZ, caminho));

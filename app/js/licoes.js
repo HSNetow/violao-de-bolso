@@ -648,7 +648,8 @@
       chipsAcordes(ids, capo),
       el('div', { class: 'opcoes' }, ...opcoesBanda(), opcaoCapo(m.capo, () => paginaMusica(palco, m)), opcaoMetronomo()),
       el('p', { class: 'nota' }, AVISO_FONE),
-      el('div', { class: 'rotulo' }, 'Ritmo'), niveis,
+      secaoGravacao(palco, m, pref),
+      el('div', { class: 'rotulo' }, m.gravacao ? 'Ou treine sem a gravação · ritmo' : 'Ritmo'), niveis,
       el('div', { class: 'rotulo' }, 'Velocidade'), el('div', { class: 'linha-range' }, vel, velTxt),
       el('div', { class: 'linha-botoes' }, btPrevia, E.dados.foco === m.id ? null : el('button', { class: 'bt bt-secundario', onclick: () => { E.dados.foco = m.id; E.salvar(); aviso('Esta agora é a sua música na tela inicial.', 'ok'); } }, 'Escolher como minha música')),
       el('div', { class: 'rotulo' }, 'Treine por partes'),
@@ -696,6 +697,111 @@
         { texto: 'Repetir', primario: true, acao: () => tocarMusica(palco, m, secaoId, pref) },
         { texto: 'Voltar para a música', acao: () => paginaMusica(palco, m) }
       ]
+    });
+    if (window.App) window.App.atualizar();
+  }
+
+  // ---------- Tocar com a gravação original ----------
+  // O áudio é do próprio usuário e fica só no aparelho (IndexedDB). Nada é enviado.
+  const Gravacoes = {
+    db() { return new Promise((ok, falha) => { const r = indexedDB.open('violao-gravacoes', 1); r.onupgradeneeded = () => r.result.createObjectStore('arquivos'); r.onsuccess = () => ok(r.result); r.onerror = () => falha(r.error); }); },
+    async ler(id) { try { const db = await this.db(); return await new Promise((ok) => { const q = db.transaction('arquivos').objectStore('arquivos').get(id); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); }); } catch (e) { return null; } },
+    async gravar(id, blob) { const db = await this.db(); return new Promise((ok, falha) => { const tx = db.transaction('arquivos', 'readwrite'); tx.objectStore('arquivos').put(blob, id); tx.oncomplete = () => ok(); tx.onerror = () => falha(tx.error); }); },
+    async obter(id) {
+      let b = await this.ler(id);
+      if (b) return b;
+      try { // servidor local do PC: pega da pasta musicas-originais
+        const r = await fetch('/gravacoes/' + id, { cache: 'no-store' });
+        if (r.ok && (r.headers.get('content-type') || '').startsWith('audio')) { b = await r.blob(); try { await this.gravar(id, b); } catch (e) { /* segue sem guardar */ } return b; }
+      } catch (e) { /* sem servidor local */ }
+      return null;
+    }
+  };
+
+  function secaoGravacao(palco, m, pref) {
+    if (!m.gravacao) return null;
+    const g = m.gravacao, fmt = window.UI.formatarTempo;
+    const guardar = () => { E.dados.config['musica-' + m.id] = pref; E.salvar(); };
+    const status = el('p', { class: 'nota' }, 'Procurando a gravação neste aparelho...');
+    const lista = el('div', { class: 'secoes' });
+    const arq = el('input', { type: 'file', accept: 'audio/*', id: 'grav-arq-' + m.id, hidden: true });
+    const btArq = el('button', { class: 'bt bt-secundario bt-pequeno', onclick: () => arq.click() }, 'Escolher o arquivo de áudio');
+    const vel = el('select', { id: 'grav-vel-' + m.id }, ...[[1, 'Velocidade normal'], [0.85, '85% (mais devagar)'], [0.75, '75% (bem devagar)']].map(([v, t]) => el('option', { value: String(v), selected: (pref.velGrav || 1) === v }, t)));
+    vel.addEventListener('change', () => { pref.velGrav = Number(vel.value); guardar(); });
+    const aj = el('input', { type: 'range', id: 'grav-aj-' + m.id, min: '-1', max: '1', step: '0.1', value: String(pref.ajuste || 0) });
+    const ajTxt = el('output', { for: aj.id });
+    const mostrarAj = () => { const v = Number(aj.value); ajTxt.textContent = v === 0 ? 'no ponto' : (v < 0 ? 'acordes ' + (-v).toFixed(1) + ' s antes' : 'acordes ' + v.toFixed(1) + ' s depois'); };
+    mostrarAj();
+    aj.addEventListener('input', () => { pref.ajuste = Number(aj.value); mostrarAj(); guardar(); });
+    function pronto(blob) {
+      status.textContent = 'Gravação pronta neste aparelho. Use fone de ouvido: sem fone, a música entra no microfone e o app não distingue o seu violão.';
+      btArq.textContent = 'Trocar o arquivo';
+      lista.innerHTML = '';
+      lista.append(
+        el('button', { class: 'secao', onclick: () => tocarGravacao(palco, m, blob, null, pref) }, el('div', null, el('b', null, 'Música inteira'), el('span', null, fmt(g.duracao))), icone('play')),
+        ...g.marcas.map((mk) => el('button', { class: 'secao', onclick: () => tocarGravacao(palco, m, blob, mk, pref) }, el('div', null, el('b', null, mk.nome), el('span', null, fmt(mk.ini) + ' a ' + fmt(mk.fim))), icone('play'))));
+    }
+    arq.addEventListener('change', async () => { const fl = arq.files[0]; if (!fl) return; try { await Gravacoes.gravar(m.id, fl); } catch (e) { aviso('Não consegui guardar o arquivo; ele vale só para agora.'); } pronto(fl); });
+    Gravacoes.obter(m.id).then((b) => { if (b) pronto(b); else status.textContent = 'Escolha o arquivo de áudio desta música no seu aparelho. Ele fica guardado só aqui e não é enviado para a internet.'; });
+    return el('div', { class: 'gravacao' },
+      el('div', { class: 'rotulo' }, 'Tocar com a gravação original'),
+      status, lista,
+      el('div', { class: 'campo' }, el('label', { for: vel.id }, 'Velocidade da gravação'), vel),
+      el('div', { class: 'campo' }, el('label', { for: aj.id }, 'Ajuste fino da sincronia'), el('div', { class: 'linha-range' }, aj, ajTxt)),
+      el('div', { class: 'opcoes' }, opcaoConfig('fone', 'Estou de fone de ouvido')),
+      btArq, arq);
+  }
+
+  async function tocarGravacao(palco, m, blob, trecho, pref) {
+    // o toque do usuário libera o áudio: toca mudo e pausa já
+    const audio = new Audio();
+    const url = URL.createObjectURL(blob);
+    audio.src = url; audio.preload = 'auto';
+    audio.muted = true;
+    const destravar = audio.play().then(() => { audio.pause(); }).catch(() => {});
+    M.pararBanda(); M.pararExemplo();
+    palco.limpar();
+    const ok = await ligarMic(palco, () => paginaMusica(palco, m));
+    if (!ok) { URL.revokeObjectURL(url); return; }
+    await destravar;
+    const g = m.gravacao, taxa = pref.velGrav || 1, aj = pref.ajuste || 0;
+    const ini = trecho ? trecho.ini : 0, fim = trecho ? trecho.fim : g.duracao;
+    const blocos = [];
+    g.acordes.forEach(([t, id], i) => {
+      const a = Math.max(t + aj, ini), b = Math.min(i + 1 < g.acordes.length ? g.acordes[i + 1][0] + aj : g.duracao, fim);
+      if (id && b - a > 0.3) blocos.push({ id, inicio: a - ini, dur: b - a });
+    });
+    audio.muted = false; audio.playbackRate = taxa;
+    try { audio.currentTime = ini; } catch (e) { /* ajusta ao tocar */ }
+    let tPlay = 0, tocando = false, timer = 0;
+    const relogio = () => (tocando ? audio.currentTime - ini : (M.agora() - tPlay) * taxa);
+    palco.tituloEl.textContent = m.titulo + (trecho ? ' · ' + trecho.nome : ' · gravação');
+    const ids = [...new Set(blocos.map((x) => x.id))];
+    const fone = !!E.dados.config.fone;
+    const r = await window.Pista.rodarPista(palco, {
+      blocos, total: fim - ini, padrao: 'livre', bpm: 60 * taxa, capo: g.capo || 0,
+      avaliarAcordes: true, avaliarRitmo: fone, metronomo: false, semGrade: true, relogio,
+      marcas: trecho ? [] : g.marcas.map((mk) => ({ nome: mk.nome, inicio: mk.ini })),
+      candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, arr) => arr.indexOf(v) === i),
+      aoIniciar: (t0) => {
+        tPlay = t0;
+        timer = setTimeout(() => { if (Math.abs(audio.currentTime - ini) > 0.05) audio.currentTime = ini; audio.play().then(() => { tocando = true; }).catch(() => aviso('O navegador bloqueou o áudio. Toque em Repetir.', 'erro')); }, Math.max(0, (t0 - M.agora()) * 1000));
+      },
+      aoLimpar: () => { clearTimeout(timer); audio.pause(); URL.revokeObjectURL(url); }
+    });
+    M.desligarMicrofone();
+    if (!r) { paginaMusica(palco, m); return; }
+    const ganho = E.registrarMusica(m.id, trecho ? 'grav-' + trecho.nome : null, r.estrelas, r.pct, 'facil', taxa);
+    const linhas = [['Acordes certos', r.okBlocos + ' de ' + r.nBlocos]];
+    if (r.avaliouRitmo) linhas.push(['Trocas no tempo', (r.perf + r.bom) + ' de ' + r.nBatidas]);
+    linhas.push(['Velocidade', Math.round(taxa * 100) + '%'], ['Nota', Math.round(r.pct * 100) + '%']);
+    const dicas = window.Pista.dicasDoResultado(r);
+    if (!fone) dicas.push('Sem fone, a gravação entra no microfone e a nota fica pouco confiável. Marque "Estou de fone de ouvido" quando estiver com ele.');
+    dicas.push('Se os acordes na tela parecem trocar antes ou depois da música, use o "Ajuste fino da sincronia" na página da música.');
+    telaResultado(palco, {
+      estrelas: r.estrelas, ganho, linhas, dicas,
+      titulo: !trecho && r.estrelas > 0 ? 'Você tocou ' + m.titulo + ' com a gravação!' : null,
+      botoes: [{ texto: 'Repetir', primario: true, acao: () => tocarGravacao(palco, m, blob, trecho, pref) }, { texto: 'Voltar para a música', acao: () => paginaMusica(palco, m) }]
     });
     if (window.App) window.App.atualizar();
   }
@@ -973,7 +1079,7 @@
       if (pref.a && !acordes.includes(pref.a)) pref.a = '';
       if (pref.b && !acordes.includes(pref.b)) pref.b = '';
       const caixaSetas = el('div', null, setasPadrao(pref.padrao));
-      const selPadrao = el('select', { id: 'rl-padrao' }, ...Object.entries(C.PADROES).filter(([k]) => k !== 'q1' && k !== 'q2').map(([k, v]) => el('option', { value: k, selected: k === pref.padrao }, v.curto + '  ' + v.nome)));
+      const selPadrao = el('select', { id: 'rl-padrao' }, ...Object.entries(C.PADROES).filter(([k]) => k !== 'q1' && k !== 'q2' && k !== 'livre').map(([k, v]) => el('option', { value: k, selected: k === pref.padrao }, v.curto + '  ' + v.nome)));
       selPadrao.addEventListener('change', () => { pref.padrao = selPadrao.value; guardar(); M.pararExemplo(); caixaSetas.innerHTML = ''; caixaSetas.append(setasPadrao(pref.padrao)); });
       const bpm = el('input', { type: 'range', id: 'rl-bpm', min: '40', max: '120', step: '5', value: String(pref.bpm) });
       const bpmTxt = el('output', { for: 'rl-bpm' }, pref.bpm + ' bpm');

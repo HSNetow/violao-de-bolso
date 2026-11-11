@@ -53,7 +53,7 @@
       const contagem = 4;
       const candidatos = cfg.candidatos || [...new Set(blocos.map((b) => b.id))];
       const temColcheias = slots.some((x, i) => i % 2 === 1 && x !== '-');
-      const mostrarMao = cfg.padrao !== 'q1' && cfg.padrao !== 'q2';
+      const mostrarMao = cfg.padrao !== 'q1' && cfg.padrao !== 'q2' && cfg.padrao !== 'livre';
       let extras = 0;
       const desvios = [];
 
@@ -92,7 +92,8 @@
       const tInicio = M.agora() + 0.6;
       const t0 = tInicio + contagem * batida;
       const nCliques = cfg.metronomo && !cfg.banda ? contagem + Math.ceil(cfg.total) : contagem;
-      const pararMetronomo = M.metronomo(tInicio, batida, nCliques, 4, cfg.banda ? 0.35 : 0);
+      const pararMetronomo = M.metronomo(tInicio, batida, nCliques, 4, cfg.banda || cfg.relogio ? 0.35 : 0);
+      if (cfg.aoIniciar) cfg.aoIniciar(t0);
       const pararBanda = cfg.banda && blocos.length ? M.banda(t0, batida, blocos, cfg.total, capo, {}) : null;
 
       // ---------- Robô (modo demonstração) ----------
@@ -126,7 +127,7 @@
         medidor.firstChild.style.width = (fr * 100).toFixed(0) + '%';
         if (r.temSinal) { tempoAcum += 0.07; if (tempoAcum > 5) { window.Estado.somarTempo(tempoAcum); tempoAcum = 0; } }
         if (!cfg.avaliarAcordes || !blocos.length) return;
-        const tb = (r.t - 0.17 - t0) / batida;
+        const tb = cfg.relogio ? cfg.relogio() - (M.agora() - r.t + 0.17) / batida : (r.t - 0.17 - t0) / batida;
         const bl = blocoEm(tb);
         if (!bl || bl.estado) return;
         if ((tb - bl.inicio) * batida < 0.3) return;
@@ -139,7 +140,7 @@
       };
       const offAtaque = (ev) => {
         if (!cfg.avaliarRitmo) return;
-        const tb = (ev.tAjustado - t0) / batida;
+        const tb = cfg.relogio ? cfg.relogio() - (M.agora() - ev.tAjustado) / batida : (ev.tAjustado - t0) / batida;
         if (tb < -0.5 || tb > cfg.total + 0.5) return;
         let melhor = null, dm = Infinity;
         for (const b of batidas) {
@@ -227,7 +228,7 @@
         const yMeio = yB + hB / 2;
         // linhas de tempo
         const bIni = Math.floor(tb - xToque / ppb) - 1, bFim = Math.ceil(tb + (W - xToque) / ppb) + 1;
-        for (let b = Math.max(-contagem, bIni); b <= Math.min(cfg.total, bFim); b++) {
+        if (!cfg.semGrade) for (let b = Math.max(-contagem, bIni); b <= Math.min(cfg.total, bFim); b++) {
           const xb = x(b);
           g.strokeStyle = cor.linha; g.lineWidth = b % 4 === 0 ? 2 : 1;
           g.globalAlpha = b % 4 === 0 ? 0.9 : 0.45;
@@ -271,7 +272,7 @@
         // trilho das batidas
         caixa(4, yB, W - 8, hB, 10); g.fillStyle = cor.sup2; g.globalAlpha = 0.55; g.fill(); g.globalAlpha = 1;
         const tam = Math.min(15, hB * 0.3);
-        for (const f of fantasmas) {
+        if (!cfg.semGrade) for (const f of fantasmas) {
           const xf = x(f.tempo);
           if (xf < -20 || xf > W + 20) continue;
           g.fillStyle = cor.texto2; g.globalAlpha = 0.35;
@@ -312,7 +313,7 @@
       function quadro() {
         if (!rodando) return;
         const saida = M.ctx.outputLatency || 0;
-        const tb = (M.agora() - saida - t0) / batida;
+        const tb = cfg.relogio ? cfg.relogio() : (M.agora() - saida - t0) / batida;
         // contagem regressiva
         if (tb < 0) { contagemEl.textContent = String(Math.min(contagem, Math.ceil(-tb))); contagemEl.classList.add('mostrar'); }
         else contagemEl.classList.remove('mostrar');
@@ -336,6 +337,7 @@
         rodando = false;
         cancelAnimationFrame(raf);
         pararMetronomo();
+        if (cfg.aoLimpar) cfg.aoLimpar();
         if (pararBanda) pararBanda();
         M.pararRobo();
         M.ouvQuadro.delete(offQuadro);

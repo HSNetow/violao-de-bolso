@@ -85,6 +85,10 @@ Para refazer os ícones depois de mudar o `app/icone.svg`, ajuste e rode
 - **Banda de acompanhamento:** nas músicas você toca junto com bateria e baixo. No ritmo Fácil,
   uma batida por acorde já soa como música. Com fone de ouvido o app confere também as batidas.
 - **Sua música:** a tela inicial mostra a música escolhida, os acordes que faltam e o próximo passo.
+- **Tocar com a gravação original:** coloque o seu arquivo de áudio na pasta `musicas-originais/` (no PC) ou
+  escolha o arquivo na página da música (no celular). O app toca a gravação e mostra cada acorde no instante real
+  da troca. O áudio fica só no aparelho e nunca vai para o GitHub. Hoje disponível para Hurt; para medir outra
+  música: `node ferramentas/analisar-gravacao.js <arquivo> <acordes>`. Use fone de ouvido.
 - **Treino do dia:** 3 exercícios curtos e adaptativos. A troca de 1 minuto no seu par mais lento, a
   "escada do ritmo" (↓↓↓↓ → ↓↑↓↑ → ↓ ↓↑ ↓ ↓↑ → ↓ ↓↑ ↑↓↑, de 50 bpm para cima, subindo 5 bpm a cada
   85% de acerto) e a troca dentro do ritmo.

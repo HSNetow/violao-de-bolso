@@ -13,6 +13,7 @@
     q4: { nome: 'Para baixo nos 4 tempos', curto: '↓ ↓ ↓ ↓', slots: ['B', '-', 'B', '-', 'B', '-', 'B', '-'] },
     c8: { nome: 'Colcheias (baixo e cima)', curto: '↓↑ ↓↑ ↓↑ ↓↑', slots: ['B', 'C', 'B', 'C', 'B', 'C', 'B', 'C'] },
     ddu: { nome: 'Baixo, baixo-cima', curto: '↓ ↓↑ ↓ ↓↑', slots: ['B', '-', 'B', 'C', 'B', '-', 'B', 'C'] },
+    livre: { nome: 'Uma batida em cada acorde', curto: '↓ a cada troca', slots: ['-', '-', '-', '-', '-', '-', '-', '-'] },
     pop: { nome: 'Ritmo universal do violão', curto: '↓ ↓↑ ↑↓↑', slots: ['B', '-', 'B', 'C', '-', 'C', 'B', 'C'] }
   };
 
@@ -223,6 +224,11 @@
       id: 'hurt', titulo: 'Hurt', artista: 'Johnny Cash', bpm: 88, capo: 0, padrao: 'q4',
       requer: ['u7-desafio'], dificuldade: 2,
       nota: 'Versão de Johnny Cash, em Lá menor. Toque leve: batidas para baixo, ou dedilhe as cordas uma a uma.',
+      gravacao: {
+        duracao: 218.4,
+        marcas: [{ nome: 'Verso 1', ini: 0, fim: 52.6 }, { nome: 'Refrão', ini: 52.6, fim: 95.6 }, { nome: 'Verso 2', ini: 95.6, fim: 147.7 }, { nome: 'Refrão final', ini: 147.7, fim: 215 }],
+        acordes: [[0.1,"Am"],[2.7,"C"],[4,"Dsus2"],[5.4,"Am"],[8,"C"],[9.4,"Dsus2"],[10.8,"Am"],[13.4,"C"],[14.8,"Dsus2"],[16.3,"Am"],[19,"C"],[20.2,"Dsus2"],[21.7,"Am"],[24.2,"C"],[25.4,"Dsus2"],[26.8,"Am"],[29.5,"C"],[30.8,"Dsus2"],[32.1,"Am"],[34.8,"C"],[36.1,"Dsus2"],[37.5,"Am"],[40.2,"C"],[41.4,"Dsus2"],[42.9,"Am"],[45.4,"C"],[46.7,"Dsus2"],[48,"Am"],[50.7,"C"],[52.6,"G"],[56,"Am"],[58.6,"Fmaj7"],[60.9,"C"],[63.5,"G"],[66.6,"Am"],[69.2,"Fmaj7"],[71.7,"C"],[74.2,"G"],[77.3,"Am"],[79.7,"Fmaj7"],[82.2,"G"],[87.8,"Am"],[90.2,"Fmaj7"],[92.7,"G"],[95.6,"Am"],[98,"C"],[99.4,"Dsus2"],[100.7,"Am"],[103.3,"C"],[104.7,"Dsus2"],[106,"Am"],[108.6,"C"],[109.9,"Dsus2"],[111.2,"Am"],[114,"C"],[115.1,"Dsus2"],[116.4,"Am"],[119.2,"C"],[120.5,"Dsus2"],[121.8,"Am"],[124.3,"C"],[125.8,"Dsus2"],[127.2,"Am"],[129.8,"C"],[131,"Dsus2"],[132.4,"Am"],[135,"C"],[136.5,"Dsus2"],[137.7,"Am"],[140.2,"C"],[141.7,"Dsus2"],[143,"Am"],[145.2,"C"],[146.6,"Dsus2"],[147.7,"G"],[151.2,"Am"],[153.6,"Fmaj7"],[156.2,"C"],[158.8,"G"],[161.7,"Am"],[164.1,"Fmaj7"],[166.8,"C"],[169.2,"G"],[172.1,"Am"],[174.9,"Fmaj7"],[177.3,"G"],[182.7,"Am"],[185.4,"Fmaj7"],[187.8,"G"],[192.7,"Am"],[195.5,"Fmaj7"],[197.9,"G"],[203.1,"Am"],[205.8,"Fmaj7"],[208.3,"G"],[214.9,null]]
+      },
       secoes: [
         { id: 'intro', nome: 'Introdução', compassos: 'Am | C Dsus2 | Am | C Dsus2' },
         { id: 'verso', nome: 'Verso', compassos: 'Am | C Dsus2 | Am | C Dsus2 | Am | C Dsus2 | Am | C Dsus2' },
