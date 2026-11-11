@@ -38,6 +38,13 @@
   function renderTrilha() {
     const c = main();
     const nAprendidos = E.acordesAprendidos().length;
+    const td = E.treinoDia(), nFeitos = td.feitos.filter(Boolean).length, ra = E.ritmoAtual();
+    c.append(el('button', { class: 'cartao-treino' + (nFeitos === 3 ? ' completo' : ''), onclick: () => L.treinoDoDia() },
+      el('div', { class: 'ct-texto' },
+        el('div', { class: 'rotulo' }, 'Treino do dia · ' + nFeitos + '/3'),
+        el('b', null, nFeitos === 3 ? 'Treino completo. Volte amanhã!' : 'Troca de acordes + mão do ritmo'),
+        el('span', null, 'Hoje: ritmo ' + C.PADROES[ra.padrao].curto + ' a ' + ra.bpm + ' bpm e a sua troca mais lenta. Uns 5 minutos.')),
+      el('div', { class: 'ct-passos' }, ...td.feitos.map((x) => el('i', { class: x ? 'feito' : '' })))));
     if (!E.dados.nivelamento && nAprendidos < 3) {
       c.append(el('div', { class: 'faixa' },
         el('div', null, el('b', null, 'Já sabe alguns acordes?'), el('span', null, 'Faça o teste de nivelamento e pule o que você já toca.')),
@@ -114,11 +121,13 @@
   function renderTreino() {
     const c = main();
     const itens = [
+      { ic: 'fogo', nome: 'Treino do dia', desc: 'Troca + ritmo, no seu nível', f: L.treinoDoDia },
+      { ic: 'setas', nome: 'Treino de ritmo', desc: 'Escolha ritmo, velocidade e acorde', f: L.ritmoLivre },
       { ic: 'afinar', nome: 'Afinador', desc: 'Afine as 6 cordas', f: L.afinadorLivre },
       { ic: 'acorde', nome: 'Detector de acordes', desc: 'Veja o que o app está ouvindo', f: L.detectorLivre },
       { ic: 'troca', nome: 'Troca de 1 minuto', desc: 'Escolha dois acordes e treine', f: L.trocaLivre },
       { ic: 'relogio', nome: 'Metrônomo', desc: 'Pulso de 40 a 160 bpm', f: L.metronomoLivre },
-      { ic: 'setas', nome: 'Sincronizar', desc: 'Mede o atraso do celular', f: L.calibrarLivre },
+      { ic: 'celular', nome: 'Sincronizar', desc: 'Mede o atraso do celular', f: L.calibrarLivre },
       { ic: 'bandeira', nome: 'Teste de nivelamento', desc: 'Marque os acordes que já sabe', f: L.nivelamento },
       { ic: 'info', nome: 'Dicionário de acordes', desc: 'Todos os acordes do curso', f: dicionario }
     ];

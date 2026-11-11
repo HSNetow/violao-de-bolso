@@ -79,15 +79,19 @@ Para refazer os ícones depois de mudar o `app/icone.svg`, ajuste e rode
 
 ## O que tem no app
 
-- **Trilha** com 8 unidades e 41 lições: conhecer o violão, afinar, sincronizar, palhetada para
+- **Trilha** com 8 unidades e 48 lições: conhecer o violão, afinar, sincronizar, palhetada para
   baixo, 17 acordes (incluindo F e Bm sem pestana e os formatos de Wonderwall), troca de 1 minuto,
   palhetada para cima, ritmo universal (↓ ↓↑ ↑↓↑) e um desafio no fim de cada unidade.
+- **Treino do dia:** 3 exercícios curtos e adaptativos. A troca de 1 minuto no seu par mais lento, a
+  "escada do ritmo" (↓↓↓↓ → ↓↑↓↑ → ↓ ↓↑ ↓ ↓↑ → ↓ ↓↑ ↑↓↑, de 50 bpm para cima, subindo 5 bpm a cada
+  85% de acerto) e a troca dentro do ritmo.
+- **Treino de ritmo:** você escolhe ritmo, velocidade e acordes, ouve o exemplo e toca.
 - **Teste de nivelamento** para quem já sabe alguns acordes, e **Pular até aqui** em cada unidade.
 - **8 músicas**, só com os acordes (sem letra), em versão simplificada para estudo:
   A Horse With No Name, Knockin' on Heaven's Door, Stand By Me, Let It Be, Tempo Perdido,
   Pais e Filhos, Hurt (Johnny Cash) e Wonderwall. Cada uma tem treino por partes e o
   **projeto final**: tocar a música inteira, com 3 níveis de ritmo e velocidade de 50% a 100%.
-- **Gamificação:** estrelas, XP e níveis, dias seguidos, meta diária de minutos tocados e 19 conquistas.
+- **Gamificação:** estrelas, XP e níveis, dias seguidos, meta diária de minutos tocados e 21 conquistas.
 - **Treino livre:** afinador, detector de acordes, troca de 1 minuto com qualquer par, metrônomo
   e dicionário de acordes com som de exemplo.
 - O progresso fica salvo no navegador. Em **Perfil** dá para exportar e importar o progresso.

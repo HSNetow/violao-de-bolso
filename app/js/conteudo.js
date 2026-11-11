@@ -47,6 +47,7 @@
         { id: 'u2-em-ritmo', tipo: 'ritmo', titulo: 'Em no ritmo', resumo: 'Em com 4 batidas por compasso', padrao: 'q4', bpm: 65, compassos: 4, acorde: 'Em' },
         { id: 'u2-d69', tipo: 'acorde', acorde: 'D69', titulo: 'Acorde D6/9', resumo: 'Mesmos dedos do Em, em outras cordas' },
         { id: 'u2-troca', tipo: 'troca', a: 'Em', b: 'D69', titulo: 'Troca Em ↔ D6/9', resumo: 'Quantas trocas em 1 minuto?', metas: [10, 20, 30] },
+        { id: 'u2-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: Em e D6/9', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'Em | D69', repetir: 4, padrao: 'q1', bpm: 60 },
         { id: 'u2-desafio', tipo: 'progressao', titulo: 'Desafio: Em e D6/9', resumo: 'Libera "A Horse With No Name"', compassos: 'Em | D69 | Em | D69', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
       ]
     },
@@ -55,6 +56,7 @@
       licoes: [
         { id: 'u3-am', tipo: 'acorde', acorde: 'Am', titulo: 'Acorde Am', resumo: 'Lá menor' },
         { id: 'u3-troca-em-am', tipo: 'troca', a: 'Em', b: 'Am', titulo: 'Troca Em ↔ Am', resumo: '1 minuto de trocas', metas: [10, 20, 30] },
+        { id: 'u3-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: Em e Am', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'Em | Am', repetir: 4, padrao: 'q1', bpm: 60 },
         { id: 'u3-e', tipo: 'acorde', acorde: 'E', titulo: 'Acorde E', resumo: 'Mi maior: o Am uma corda acima' },
         { id: 'u3-troca-e-am', tipo: 'troca', a: 'E', b: 'Am', titulo: 'Troca E ↔ Am', resumo: 'O formato só muda de corda', metas: [10, 20, 30] },
         { id: 'u3-desafio', tipo: 'progressao', titulo: 'Desafio: Am, Em e E', resumo: 'Três acordes no ritmo', compassos: 'Am | Em | E | Am', repetir: 2, padrao: 'q4', bpm: 70, desafio: true }
@@ -66,6 +68,7 @@
         { id: 'u4-d', tipo: 'acorde', acorde: 'D', titulo: 'Acorde D', resumo: 'Ré maior, o triângulo' },
         { id: 'u4-a', tipo: 'acorde', acorde: 'A', titulo: 'Acorde A', resumo: 'Lá maior, três dedos juntos' },
         { id: 'u4-troca-a-d', tipo: 'troca', a: 'A', b: 'D', titulo: 'Troca A ↔ D', resumo: 'A troca clássica do iniciante', metas: [10, 20, 30] },
+        { id: 'u4-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: A e D', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'A | D', repetir: 4, padrao: 'q1', bpm: 60 },
         { id: 'u4-desafio', tipo: 'progressao', titulo: 'Desafio: A, D e E', resumo: 'A base de mil músicas', compassos: 'A | D | A | E', repetir: 2, padrao: 'q4', bpm: 72, desafio: true }
       ]
     },
@@ -75,6 +78,7 @@
         { id: 'u5-g', tipo: 'acorde', acorde: 'G', titulo: 'Acorde G', resumo: 'Sol maior' },
         { id: 'u5-c', tipo: 'acorde', acorde: 'C', titulo: 'Acorde C', resumo: 'Dó maior, a escadinha' },
         { id: 'u5-troca-g-c', tipo: 'troca', a: 'G', b: 'C', titulo: 'Troca G ↔ C', resumo: '1 minuto de trocas', metas: [10, 20, 30] },
+        { id: 'u5-troca-tempo', tipo: 'progressao', titulo: 'Troca no tempo: G e C', resumo: 'Uma batida por compasso e 3 tempos para trocar', compassos: 'G | C', repetir: 4, padrao: 'q1', bpm: 60 },
         { id: 'u5-troca-g-d', tipo: 'troca', a: 'G', b: 'D', titulo: 'Troca G ↔ D', resumo: '1 minuto de trocas', metas: [10, 20, 30] },
         { id: 'u5-desafio', tipo: 'progressao', titulo: 'Desafio: G, D, Am e C', resumo: 'Libera "Knockin\' on Heaven\'s Door"', compassos: 'G | D | Am | Am | G | D | C | C', repetir: 1, padrao: 'q4', bpm: 68, desafio: true }
       ]
@@ -87,6 +91,8 @@
           paginas: [
             { titulo: 'A mão é um pêndulo', figura: 'pendulo', texto: 'A mão do ritmo sobe e desce o tempo todo, como um pêndulo. <b>Para baixo (↓)</b> cai em cima do tempo (1, 2, 3, 4). <b>Para cima (↑)</b> cai no "e" entre os tempos (1 <b>e</b> 2 <b>e</b>...).' },
             { titulo: 'Batida fantasma', figura: 'fantasma', texto: 'Quando o padrão tem um espaço (·), a mão continua o movimento, mas passa <b>sem encostar</b> nas cordas. É isso que mantém o ritmo firme. No ritmo universal (↓ ↓↑ ↑↓↑), a mão desce sem tocar no tempo 3.' },
+            { titulo: 'Monte o ritmo em etapas', figura: 'fantasma', texto: 'Ninguém aprende ↓ ↓↑ ↑↓↑ de uma vez. Primeiro toque todas as 8 batidas (↓↑↓↑↓↑↓↑) com as cordas abafadas. Depois vá <b>tirando batidas</b>, sem mudar o movimento da mão. Na pista, a bolinha ao lado da linha é a sua mão: suba e desça junto com ela.' },
+            { titulo: 'Trocar sem parar a mão', figura: 'pendulo', texto: 'A mão do ritmo <b>nunca espera</b> a mão dos acordes. Comece a soltar o acorde na última batida para cima do compasso. Tudo bem essa batida pegar cordas soltas: é assim que todo mundo toca.' },
             { titulo: 'Para cima é mais leve', figura: 'pendulo', texto: 'Na palhetada para cima, pegue só as 3 ou 4 cordas mais finas, com menos força. O app escuta o <b>momento</b> de cada batida. A direção (↓ ou ↑) ele não consegue ouvir, então siga as setas.' }
           ],
           quiz: [
@@ -95,8 +101,11 @@
           ]
         },
         { id: 'u6-colcheias', tipo: 'ritmo', titulo: 'Baixo e cima sem parar', resumo: 'Cordas abafadas, 8 batidas', padrao: 'c8', bpm: 60, compassos: 4, acorde: null },
-        { id: 'u6-ddu', tipo: 'ritmo', titulo: 'Ritmo ↓ ↓↑ ↓ ↓↑', resumo: 'Com o acorde G', padrao: 'ddu', bpm: 65, compassos: 4, acorde: 'G' },
-        { id: 'u6-pop', tipo: 'ritmo', titulo: 'Ritmo universal', resumo: '↓ ↓↑ ↑↓↑ com Em', padrao: 'pop', bpm: 65, compassos: 4, acorde: 'Em' },
+        { id: 'u6-ddu-abafado', tipo: 'ritmo', titulo: 'Ritmo ↓ ↓↑ ↓ ↓↑ abafado', resumo: 'Etapa 1: tire duas batidas para cima', padrao: 'ddu', bpm: 55, compassos: 4, acorde: null },
+        { id: 'u6-ddu', tipo: 'ritmo', titulo: 'Ritmo ↓ ↓↑ ↓ ↓↑', resumo: 'Com o acorde G', padrao: 'ddu', bpm: 60, compassos: 4, acorde: 'G' },
+        { id: 'u6-pop-abafado', tipo: 'ritmo', titulo: 'Ritmo universal abafado', resumo: 'Etapa 2: a mão desce sem tocar no tempo 3', padrao: 'pop', bpm: 50, compassos: 4, acorde: null },
+        { id: 'u6-pop', tipo: 'ritmo', titulo: 'Ritmo universal', resumo: '↓ ↓↑ ↑↓↑ com Em', padrao: 'pop', bpm: 58, compassos: 4, acorde: 'Em' },
+        { id: 'u6-pop-troca', tipo: 'progressao', titulo: 'Ritmo universal com troca', resumo: 'Dois compassos em cada acorde', compassos: 'Em | Em | G | G', repetir: 2, padrao: 'pop', bpm: 58 },
         { id: 'u6-desafio', tipo: 'progressao', titulo: 'Desafio: G, Em, C e D', resumo: 'Libera "Stand By Me"', compassos: 'G | Em | C | D', repetir: 2, padrao: 'pop', bpm: 70, desafio: true }
       ]
     },
@@ -237,6 +246,39 @@
     }
   ];
 
+  // Dicas de dedos para cada troca (chave: os dois ids em ordem alfabética)
+  const DICAS_TROCA = {
+    'Am-Em': 'Os dedos 2 e 3 andam juntos, lado a lado na casa 2: do Em para o Am, cada um passa para a corda vizinha mais fina. Depois é só pousar o dedo 1.',
+    'D69-Em': 'Os dedos 2 e 3 não saem da casa 2. Eles só se afastam: o 2 vai para a 6ª corda e o 3 para a 3ª corda.',
+    'Am-E': 'É o mesmo desenho de dedos. Levante os três juntos, como um carimbo, e pouse uma corda acima (E) ou abaixo (Am).',
+    'A-D': 'O dedo 3 é o guia: ele não sai da 2ª corda, só desliza da casa 2 (A) para a casa 3 (D).',
+    'A-E': 'O dedo 1 é o guia: sai da 4ª corda, casa 2 (A) e vai para a 3ª corda, casa 1 (E). Os dedos 2 e 3 pousam juntos.',
+    'D-E': 'O dedo 1 fica na 3ª corda: desliza da casa 2 (D) para a casa 1 (E).',
+    'D-G': 'O dedo 3 fica sempre na casa 3: só troca da 1ª corda (G) para a 2ª corda (D).',
+    'Em-G': 'Truque: monte o Em com os dedos 1 e 2. Assim o dedo 1 fica parado na 5ª corda, casa 2, nos dois acordes.',
+    'Am-C': 'Os dedos 1 e 2 ficam parados. Só o dedo 3 se move: 5ª corda, casa 3 (C) ou 3ª corda, casa 2 (Am).',
+    'C-Fmaj7': 'O dedo 1 fica parado na 2ª corda. Os dedos 2 e 3 passam juntos para a corda vizinha.',
+    'Am-Fmaj7': 'O dedo 1 fica parado na 2ª corda, casa 1. Só os dedos 2 e 3 mudam.',
+    'Am-Am7': 'Só o dedo 3 sai. Os outros ficam parados.',
+    'D-Dsus2': 'Só o dedo 2 sai da 1ª corda. Os outros ficam parados.'
+  };
+  const FORMATOS_WW = ['Em7', 'Gww', 'Dsus4', 'A7sus4', 'Cadd9'];
+  function dicaTroca(a, b) {
+    if (FORMATOS_WW.includes(a) && FORMATOS_WW.includes(b)) return 'Os dedos 3 e 4 não saem da casa 3. Só os dedos 1 e 2 mudam de lugar.';
+    return DICAS_TROCA[[a, b].sort().join('-')] || 'Esses dois acordes não têm dedo em comum. Monte o desenho do próximo acorde no ar e pouse todos os dedos ao mesmo tempo, não um por um.';
+  }
+
+  // Pares usados no treino do dia (entram quando os dois acordes já foram aprendidos)
+  const PARES_TREINO = [['Em', 'Am'], ['Em', 'D69'], ['Am', 'E'], ['A', 'D'], ['A', 'E'], ['D', 'E'], ['G', 'C'], ['G', 'D'], ['C', 'Am'], ['G', 'Em'], ['C', 'D'], ['D', 'Em'], ['C', 'Fmaj7'], ['Am', 'Fmaj7'], ['Am', 'D']];
+
+  // Escada do ritmo: cada degrau vai de "de" até "ate" bpm, subindo 5 por vez
+  const ESCADA_RITMO = [
+    { padrao: 'q4', de: 50, ate: 80 },
+    { padrao: 'c8', de: 50, ate: 80 },
+    { padrao: 'ddu', de: 50, ate: 80 },
+    { padrao: 'pop', de: 50, ate: 90 }
+  ];
+
   // Níveis de ritmo para as músicas (do mais fácil ao original)
   const NIVEIS_RITMO = [
     { id: 'facil', nome: 'Fácil', desc: '1 batida em cada acorde', padrao: 'q1' },
@@ -260,6 +302,8 @@
     { id: 'hurt', nome: 'Império de terra', desc: 'Tocou Hurt inteira' },
     { id: 'wonderwall', nome: 'Wonderwall', desc: 'Tocou Wonderwall inteira' },
     { id: 'velocidade-original', nome: 'Na velocidade', desc: 'Música inteira na velocidade original' },
+    { id: 'treino-dia', nome: 'Treino em dia', desc: 'Completou os 3 passos do treino do dia' },
+    { id: 'ritmo-universal', nome: 'Mão direita solta', desc: 'Chegou ao ritmo universal na escada do ritmo' },
     { id: 'seq-3', nome: '3 dias seguidos', desc: 'Praticou 3 dias seguidos' },
     { id: 'seq-7', nome: 'Uma semana', desc: 'Praticou 7 dias seguidos' },
     { id: 'seq-30', nome: 'Um mês', desc: 'Praticou 30 dias seguidos' },
@@ -317,5 +361,5 @@
     return { blocos: todos, total: inicio, marcas };
   }
 
-  window.Conteudo = { PADROES, UNIDADES, LICOES, MUSICAS, NIVEIS_RITMO, CONQUISTAS, NIVEIS, blocosDe, blocosDaMusica };
+  window.Conteudo = { PADROES, UNIDADES, LICOES, MUSICAS, NIVEIS_RITMO, CONQUISTAS, NIVEIS, blocosDe, blocosDaMusica, DICAS_TROCA, dicaTroca, PARES_TREINO, ESCADA_RITMO };
 })();

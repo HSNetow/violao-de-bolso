@@ -293,6 +293,7 @@
     const btComecar = el('button', { class: 'bt' }, 'Começar');
     palco.corpo.append(el('div', { class: 'licao-troca' },
       el('p', { class: 'ac-dica' }, `Troque entre ${T.ACORDES[a].nome} e ${T.ACORDES[b].nome} o mais rápido que conseguir, sempre com som limpo. Toque uma batida em cada acorde. O app conta cada troca certa.`),
+      caixaDica(C.dicaTroca(a, b)),
       el('div', { class: 'troca-par' }, ca, icone('troca', 'troca-seta'), cb),
       el('div', { class: 'troca-placar' }, el('div', null, el('div', { class: 'rotulo' }, 'Trocas'), contador), el('div', null, el('div', { class: 'rotulo' }, 'Tempo'), relogio), el('div', null, el('div', { class: 'rotulo' }, 'Recorde'), el('div', { class: 'troca-recorde' }, String(recorde)))),
       el('div', { class: 'troca-metas' }, ...metas.map((m, i) => el('span', null, estrelas(i + 1), ' ' + m))),
@@ -345,6 +346,7 @@
         const est = trocas >= metas[2] ? 3 : trocas >= metas[1] ? 2 : trocas >= metas[0] ? 1 : 0;
         const linhas = [['Trocas em 1 minuto', String(trocas)], ['Recorde anterior', String(rec.anterior)]];
         const dicas = est < 3 ? ['Faça o movimento devagar e certo antes de acelerar. Velocidade vem da repetição.', 'Procure dedos que não precisam sair do lugar entre os dois acordes.'] : [];
+        if (opcoes && opcoes.aoFim) { opcoes.aoFim({ estrelas: est, titulo: rec.recorde ? 'Novo recorde: ' + trocas + ' trocas!' : trocas + ' trocas', linhas, dicas }); return; }
         if (licao.id && licao.id.startsWith('livre')) {
           telaResultado(palco, { estrelas: est, titulo: rec.recorde ? 'Novo recorde!' : trocas + ' trocas', linhas, dicas, botoes: [{ texto: 'De novo', primario: true, acao: () => licaoTroca(palco, licao, opcoes) }, { texto: 'Fechar', acao: () => palco.fechar() }] });
         } else {
@@ -508,6 +510,20 @@
     return el('div', { class: 'padrao-visual', 'aria-label': C.PADROES[padraoId].nome },
       ...slots.map((s, i) => el('div', { class: 'padrao-slot ' + (s === 'B' ? 'baixo' : s === 'C' ? 'cima' : 'vazio') }, el('span', { class: 'seta' }, s === 'B' ? '↓' : s === 'C' ? '↑' : '·'), el('span', { class: 'conta' }, rot[i]))));
   }
+  function caixaDica(texto) { return el('div', { class: 'dica-troca' }, icone('info'), el('span', null, texto)); }
+  // botão que toca o exemplo do ritmo; obter() devolve {padrao, bpm, ids, capo}
+  function botaoOuvir(obter) {
+    const b = el('button', { class: 'bt bt-secundario' });
+    const desenhar = (tocando) => { b.innerHTML = ''; b.append(icone(tocando ? 'fechar' : 'som'), tocando ? ' Parar' : ' Ouvir o ritmo'); };
+    desenhar(false);
+    b.addEventListener('click', () => {
+      if (M.exemplo) { M.pararExemplo(); return; }
+      const o = obter();
+      desenhar(true);
+      M.tocarPadrao(C.PADROES[o.padrao].slots, o.bpm, o.ids, o.capo || 0, o.ids.length > 1 ? 4 : 2, () => desenhar(false));
+    });
+    return b;
+  }
   function opcaoMetronomo() {
     const id = 'metro-' + Math.random().toString(36).slice(2, 7);
     const chk = el('input', { type: 'checkbox', id, checked: E.dados.config.volumeClique > 0 });
@@ -541,10 +557,14 @@
       el('div', { class: 'rotulo' }, 'Ritmo: ' + C.PADROES[licao.padrao].nome),
       setasPadrao(licao.padrao),
       el('div', { class: 'preparo-info' }, el('span', null, licao.bpm + ' batidas por minuto'), el('span', null, (ritmo ? licao.compassos : C.blocosDe(licao.compassos, licao.repetir).total / 4) + ' compassos')),
-      el('div', { class: 'opcoes' }, opcaoMetronomo(), opcaoCapo(capoLicao, () => licaoPista(palco, licao))),
+      ids.length === 2 ? caixaDica(C.dicaTroca(ids[0], ids[1])) : null,
+      el('div', { class: 'linha-botoes' }, botaoOuvir(() => ({ padrao: licao.padrao, bpm: licao.bpm, ids, capo: capoEfetivo(capoLicao) }))),
+      el('div', { class: 'opcoes' }, opcaoMetronomo(), opcaoCapo(capoLicao, () => { M.pararExemplo(); licaoPista(palco, licao); })),
       semCalib ? el('p', { class: 'nota' }, 'Dica: faça a lição "Sincronize o app" para o tempo das batidas ser medido com precisão.') : null,
       btComecar));
+    palco.aoFechar(() => M.pararExemplo());
     btComecar.addEventListener('click', async () => {
+      M.pararExemplo();
       const ok = await ligarMic(palco, () => licaoPista(palco, licao));
       if (!ok) return;
       const { capo, blocos, total } = montar();
@@ -789,8 +809,180 @@
       el('button', { class: 'bt', onclick: () => { if (a === b) { aviso('Escolha dois acordes diferentes.'); return; } palco.limpar(); licaoTroca(palco, { id: 'livre', a, b, capo: WW.includes(a) ? 2 : 0, metas: [10, 20, 30] }); } }, 'Continuar')));
   }
 
+  // ---------- Exercício de pista genérico (preparo + execução) ----------
+  function linhasDaPista(r) {
+    const linhas = [];
+    if (r.avaliouAcordes) linhas.push(['Acordes certos', r.okBlocos + ' de ' + r.nBlocos]);
+    if (r.avaliouRitmo) linhas.push(['Batidas no tempo', (r.perf + r.bom) + ' de ' + r.nBatidas], ['Perfeitas', String(r.perf)]);
+    linhas.push(['Nota', Math.round(r.pct * 100) + '%']);
+    return linhas;
+  }
+  function blocosAlternados(a, b, compassos) {
+    const blocos = [];
+    if (a) for (let c = 0; c < compassos; c++) blocos.push({ id: b && c % 2 ? b : a, inicio: c * 4, dur: 4 });
+    return blocos;
+  }
+  async function executarPista(palco, o) {
+    const ids = [...new Set(o.blocos.map((x) => x.id))];
+    const r = await window.Pista.rodarPista(palco, {
+      blocos: o.blocos, total: o.total, padrao: o.padrao, bpm: o.bpm, capo: o.capo || 0,
+      avaliarAcordes: o.blocos.length > 0, avaliarRitmo: true, abafado: !o.blocos.length,
+      metronomo: E.dados.config.volumeClique > 0, acordeRobo: 'Em',
+      candidatos: ids.concat(candidatosPara(ids[0] || 'Em')).filter((v, i, arr) => arr.indexOf(v) === i)
+    });
+    M.desligarMicrofone();
+    return r;
+  }
+  function exercicioPista(palco, o) {
+    return new Promise((resolver) => {
+      palco.limpar();
+      palco.tituloEl.textContent = o.titulo;
+      const ids = [...new Set(o.blocos.map((x) => x.id))];
+      const bt = el('button', { class: 'bt' }, icone('play'), ' Começar');
+      palco.corpo.append(el('div', { class: 'preparo' },
+        el('p', { class: 'ac-dica' }, o.texto),
+        ids.length ? chipsAcordes(ids, o.capo || 0) : null,
+        ids.length === 2 ? caixaDica(C.dicaTroca(ids[0], ids[1])) : null,
+        el('div', { class: 'rotulo' }, 'Ritmo: ' + C.PADROES[o.padrao].nome),
+        setasPadrao(o.padrao),
+        el('div', { class: 'preparo-info' }, el('span', null, o.bpm + ' batidas por minuto'), el('span', null, (o.total / 4) + ' compassos')),
+        el('div', { class: 'linha-botoes' }, botaoOuvir(() => ({ padrao: o.padrao, bpm: o.bpm, ids, capo: o.capo }))),
+        el('div', { class: 'opcoes' }, opcaoMetronomo()),
+        bt));
+      palco.aoFechar(() => M.pararExemplo());
+      bt.addEventListener('click', async () => {
+        M.pararExemplo();
+        const ok = await ligarMic(palco, () => resolver(exercicioPista(palco, o)));
+        if (!ok) return;
+        resolver(await executarPista(palco, o));
+      });
+    });
+  }
+
+  // ---------- Treino do dia ----------
+  function treinoDoDia() {
+    const palco = abrirPalco('Treino do dia', { aoFechar: () => window.App && window.App.atualizar() });
+    menuTreino(palco);
+  }
+  function planoTreino() {
+    const [a, b] = E.parFraco();
+    const r = E.ritmoAtual();
+    const padraoTroca = r.degrau > 0 ? C.ESCADA_RITMO[r.degrau - 1].padrao : 'q2';
+    return { a, b, r, padraoTroca };
+  }
+  function menuTreino(palco) {
+    palco.limpar();
+    palco.tituloEl.textContent = 'Treino do dia';
+    const t = E.treinoDia();
+    const p = planoTreino();
+    const na = T.ACORDES[p.a].nome, nb = T.ACORDES[p.b].nome;
+    const passos = [
+      { nome: 'Troca de 1 minuto: ' + na + ' ↔ ' + nb, desc: 'Seu par mais lento. Recorde atual: ' + E.recordeTroca(p.a, p.b) + ' trocas.', f: () => passoTroca(palco, p) },
+      { nome: 'Mão do ritmo: ' + C.PADROES[p.r.padrao].curto, desc: 'Cordas abafadas, a ' + p.r.bpm + ' bpm. Passando de 85%, a velocidade sobe sozinha.', f: () => passoRitmo(palco, p) },
+      { nome: 'Troca no ritmo: ' + na + ' e ' + nb, desc: 'Ritmo ' + C.PADROES[p.padraoTroca].curto + ' a 60 bpm, trocando a cada compasso.', f: () => passoTrocaRitmo(palco, p) }
+    ];
+    const proximo = t.feitos.findIndex((x) => !x);
+    palco.corpo.append(el('div', { class: 'preparo' },
+      el('p', { class: 'ac-dica' }, 'Três exercícios curtos, escolhidos pelo que você mais precisa: a troca mais lenta e o seu degrau na escada do ritmo. Leva uns 5 minutos.'),
+      el('ol', { class: 'treino-passos' }, ...passos.map((ps, i) => el('li', { class: t.feitos[i] ? 'feito' : i === proximo ? 'atual' : '' },
+        el('button', { onclick: ps.f }, el('span', { class: 'tp-num' }, t.feitos[i] ? icone('check') : String(i + 1)), el('div', null, el('b', null, ps.nome), el('span', null, ps.desc)))))),
+      escadaVisual(p.r),
+      proximo >= 0 ? el('button', { class: 'bt', onclick: passos[proximo].f }, icone('play'), ' ' + (proximo === 0 ? 'Começar' : 'Continuar: passo ' + (proximo + 1))) : el('p', { class: 'ac-status ok' }, 'Treino de hoje completo. Volte amanhã!')));
+  }
+  function escadaVisual(r) {
+    return el('div', { class: 'escada' }, el('div', { class: 'rotulo' }, 'Escada do ritmo'),
+      el('div', { class: 'escada-degraus' }, ...C.ESCADA_RITMO.map((d, i) => el('div', { class: i < r.degrau ? 'feito' : i === r.degrau ? 'atual' : '' },
+        el('b', null, C.PADROES[d.padrao].curto), el('span', null, i < r.degrau ? 'dominado' : i === r.degrau ? r.bpm + ' de ' + d.ate + ' bpm' : 'bloqueado')))));
+  }
+  function fimPasso(palco, i, res, repetir) {
+    const g = E.marcarTreino(i);
+    const falta = E.treinoDia().feitos.some((x) => !x);
+    telaResultado(palco, {
+      estrelas: res.estrelas, titulo: res.titulo, linhas: res.linhas, dicas: res.dicas,
+      ganho: { xp: g.xp, novasConquistas: g.novasConquistas },
+      extra: g.bonus ? el('div', { class: 'resultado-liberou' }, icone('check'), el('div', null, el('b', null, 'Treino do dia completo'), el('span', null, 'Bônus de 30 XP. Constância vale mais que horas seguidas.'))) : null,
+      botoes: [{ texto: falta ? 'Próximo passo' : 'Concluir', primario: true, acao: () => menuTreino(palco) }, { texto: 'Repetir este passo', acao: repetir }]
+    });
+    if (window.App) window.App.atualizar();
+  }
+  function passoTroca(palco, p) {
+    palco.limpar();
+    palco.tituloEl.textContent = 'Passo 1: troca de 1 minuto';
+    licaoTroca(palco, { id: 'livre-dia', a: p.a, b: p.b, capo: 0, metas: [10, 20, 30] }, { aoFim: (res) => fimPasso(palco, 0, res, () => passoTroca(palco, p)) });
+  }
+  async function passoRitmo(palco, p) {
+    const r = await exercicioPista(palco, {
+      titulo: 'Passo 2: mão do ritmo', padrao: p.r.padrao, bpm: p.r.bpm, blocos: [], total: 16,
+      texto: 'Abafe as cordas com a mão do braço e siga as setas. A mão sobe e desce sem parar, como um pêndulo; nos espaços (·) ela passa sem encostar. Ouça o exemplo antes.'
+    });
+    if (!r) { menuTreino(palco); return; }
+    const msg = E.avancarRitmo(r.pctRitmo);
+    fimPasso(palco, 1, { estrelas: r.estrelas, linhas: linhasDaPista(r), dicas: [msg].concat(window.Pista.dicasDoResultado(r)) }, () => passoRitmo(palco, planoTreino()));
+  }
+  async function passoTrocaRitmo(palco, p) {
+    const r = await exercicioPista(palco, {
+      titulo: 'Passo 3: troca no ritmo', padrao: p.padraoTroca, bpm: 60, blocos: blocosAlternados(p.a, p.b, 8), total: 32,
+      texto: 'Agora as duas mãos juntas. A mão do ritmo não espera: comece a soltar o acorde na última batida do compasso para chegar no próximo a tempo.'
+    });
+    if (!r) { menuTreino(palco); return; }
+    fimPasso(palco, 2, { estrelas: r.estrelas, linhas: linhasDaPista(r), dicas: window.Pista.dicasDoResultado(r) }, () => passoTrocaRitmo(palco, p));
+  }
+
+  // ---------- Treino de ritmo livre ----------
+  function ritmoLivre() {
+    const palco = abrirPalco('Treino de ritmo', { aoFechar: () => window.App && window.App.atualizar() });
+    const pref = Object.assign({ padrao: 'pop', bpm: 60, a: '', b: '' }, E.dados.config.ritmoLivre || {});
+    const guardar = () => { E.dados.config.ritmoLivre = pref; E.salvar(); };
+    function tela() {
+      palco.limpar();
+      palco.tituloEl.textContent = 'Treino de ritmo';
+      const aprendidos = E.acordesAprendidos().filter((id) => !WW.includes(id));
+      const acordes = aprendidos.length ? aprendidos : ['Em', 'Am', 'E', 'A', 'D', 'G', 'C'];
+      if (pref.a && !acordes.includes(pref.a)) pref.a = '';
+      if (pref.b && !acordes.includes(pref.b)) pref.b = '';
+      const caixaSetas = el('div', null, setasPadrao(pref.padrao));
+      const selPadrao = el('select', { id: 'rl-padrao' }, ...Object.entries(C.PADROES).filter(([k]) => k !== 'q1' && k !== 'q2').map(([k, v]) => el('option', { value: k, selected: k === pref.padrao }, v.curto + '  ' + v.nome)));
+      selPadrao.addEventListener('change', () => { pref.padrao = selPadrao.value; guardar(); M.pararExemplo(); caixaSetas.innerHTML = ''; caixaSetas.append(setasPadrao(pref.padrao)); });
+      const bpm = el('input', { type: 'range', id: 'rl-bpm', min: '40', max: '120', step: '5', value: String(pref.bpm) });
+      const bpmTxt = el('output', { for: 'rl-bpm' }, pref.bpm + ' bpm');
+      bpm.addEventListener('input', () => { pref.bpm = Number(bpm.value); bpmTxt.textContent = pref.bpm + ' bpm'; guardar(); M.pararExemplo(); });
+      const selA = el('select', { id: 'rl-a' }, el('option', { value: '' }, 'Cordas abafadas'), ...acordes.map((id) => el('option', { value: id, selected: id === pref.a }, T.ACORDES[id].nome)));
+      const selB = el('select', { id: 'rl-b' }, el('option', { value: '' }, 'Sem troca'), ...acordes.map((id) => el('option', { value: id, selected: id === pref.b }, T.ACORDES[id].nome)));
+      selA.addEventListener('change', () => { pref.a = selA.value; guardar(); M.pararExemplo(); });
+      selB.addEventListener('change', () => { pref.b = selB.value; guardar(); M.pararExemplo(); });
+      const idsAtuais = () => (pref.a ? (pref.b && pref.b !== pref.a ? [pref.a, pref.b] : [pref.a]) : []);
+      palco.corpo.append(el('div', { class: 'preparo' },
+        el('p', { class: 'ac-dica' }, 'Monte o seu treino: escolha o ritmo, comece devagar e só suba a velocidade quando sair limpo. Primeiro abafado, depois com um acorde, depois trocando.'),
+        el('div', { class: 'campo' }, el('label', { for: 'rl-padrao' }, 'Ritmo'), selPadrao), caixaSetas,
+        el('div', { class: 'campo' }, el('label', { for: 'rl-bpm' }, 'Velocidade'), el('div', { class: 'linha-range' }, bpm, bpmTxt)),
+        el('div', { class: 'campo' }, el('label', { for: 'rl-a' }, 'Acorde'), selA),
+        el('div', { class: 'campo' }, el('label', { for: 'rl-b' }, 'Trocar com (a cada compasso)'), selB),
+        el('div', { class: 'linha-botoes' }, botaoOuvir(() => ({ padrao: pref.padrao, bpm: pref.bpm, ids: idsAtuais(), capo: 0 }))),
+        el('div', { class: 'opcoes' }, opcaoMetronomo()),
+        el('button', { class: 'bt', onclick: tocar }, icone('play'), ' Começar')));
+      palco.aoFechar(() => M.pararExemplo());
+    }
+    async function tocar() {
+      M.pararExemplo();
+      const ids = pref.a ? (pref.b && pref.b !== pref.a ? [pref.a, pref.b] : [pref.a]) : [];
+      const compassos = ids.length === 2 ? 8 : 4;
+      palco.limpar();
+      const ok = await ligarMic(palco, tela);
+      if (!ok) return;
+      const r = await executarPista(palco, { padrao: pref.padrao, bpm: pref.bpm, blocos: blocosAlternados(ids[0], ids[1], compassos), total: compassos * 4 });
+      if (!r) { tela(); return; }
+      const botoes = [{ texto: 'Repetir', primario: r.estrelas < 2, acao: tocar }];
+      if (r.estrelas >= 2 && pref.bpm < 120) botoes.unshift({ texto: 'Mais rápido: ' + (pref.bpm + 5) + ' bpm', primario: true, acao: () => { pref.bpm += 5; guardar(); tocar(); } });
+      if (r.estrelas === 0 && pref.bpm > 40) botoes.unshift({ texto: 'Mais devagar: ' + (pref.bpm - 5) + ' bpm', primario: true, acao: () => { pref.bpm -= 5; guardar(); tocar(); } });
+      botoes.push({ texto: 'Mudar o treino', acao: tela });
+      E.ganharXP(r.estrelas > 0 ? 3 : 0); E.salvar();
+      telaResultado(palco, { estrelas: r.estrelas, linhas: linhasDaPista(r).concat([['Velocidade', pref.bpm + ' bpm']]), dicas: window.Pista.dicasDoResultado(r), botoes });
+    }
+    tela();
+  }
+
   function afinadorLivre() { const p = abrirPalco('Afinador'); licaoAfinar(p, null); }
   function calibrarLivre() { const p = abrirPalco('Sincronizar'); licaoCalibrar(p, null); }
 
-  window.Licoes = { rodarLicao, abrirMusica, nivelamento, detectorLivre, metronomoLivre, trocaLivre, afinadorLivre, calibrarLivre, BASICOS, WW };
+  window.Licoes = { treinoDoDia, ritmoLivre, rodarLicao, abrirMusica, nivelamento, detectorLivre, metronomoLivre, trocaLivre, afinadorLivre, calibrarLivre, BASICOS, WW };
 })();

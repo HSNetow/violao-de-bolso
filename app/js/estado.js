@@ -18,6 +18,8 @@
     metaBatidaEm: '',
     conquistas: {},      // id -> data
     config: { latencia: null, volumeClique: 0.5, sensibilidade: 1, temCapo: true, demo: false },
+    ritmo: { degrau: 0, bpm: 50 },
+    treinoDia: { data: '', feitos: [false, false, false], bonus: false },
     boasVindas: false,
     nivelamento: false
   });
@@ -186,6 +188,49 @@
     return C.LICOES.filter((l) => l.tipo === 'acorde' && concluida(l.id)).map((l) => l.acorde);
   }
 
+  // ---------- Treino do dia ----------
+  function ritmoAtual() {
+    const e = C.ESCADA_RITMO;
+    const d = Math.max(0, Math.min(dados.ritmo.degrau, e.length - 1));
+    return { degrau: d, padrao: e[d].padrao, bpm: dados.ritmo.bpm, ate: e[d].ate };
+  }
+  function avancarRitmo(pct) {
+    const e = C.ESCADA_RITMO, r = dados.ritmo;
+    r.degrau = Math.max(0, Math.min(r.degrau, e.length - 1));
+    let msg;
+    if (pct >= 0.85) {
+      if (r.bpm + 5 > e[r.degrau].ate) {
+        if (r.degrau < e.length - 1) { r.degrau++; r.bpm = e[r.degrau].de; msg = 'Ritmo dominado! O próximo treino traz um ritmo novo: ' + C.PADROES[e[r.degrau].padrao].curto; }
+        else msg = 'Você toca o ritmo universal em velocidade de música. Agora é com as músicas!';
+      } else { r.bpm += 5; msg = 'Subiu de velocidade! Próximo treino: ' + r.bpm + ' bpm.'; }
+    } else if (pct < 0.5 && r.bpm > 40) { r.bpm -= 5; msg = 'Vamos mais devagar: próximo treino em ' + r.bpm + ' bpm.'; }
+    else msg = 'Continue em ' + r.bpm + ' bpm. Passando de 85%, a velocidade sobe.';
+    salvar();
+    return msg;
+  }
+  function treinoDia() {
+    if (dados.treinoDia.data !== hoje()) dados.treinoDia = { data: hoje(), feitos: [false, false, false], bonus: false };
+    return dados.treinoDia;
+  }
+  function marcarTreino(i) {
+    const t = treinoDia();
+    const jaFeito = t.feitos[i];
+    t.feitos[i] = true;
+    marcarDia();
+    let xp = jaFeito ? 2 : 8, bonus = false;
+    if (t.feitos.every(Boolean) && !t.bonus) { t.bonus = true; xp += 30; bonus = true; }
+    ganharXP(xp);
+    const novasConquistas = verificarConquistas();
+    salvar();
+    return { xp, bonus, novasConquistas };
+  }
+  function parFraco() {
+    const ap = new Set(acordesAprendidos());
+    const cands = C.PARES_TREINO.filter(([a, b]) => ap.has(a) && ap.has(b));
+    const lista = cands.length ? cands : [['Em', 'Am']];
+    return lista.slice().sort((p, q) => recordeTroca(p[0], p[1]) - recordeTroca(q[0], q[1]))[0];
+  }
+
   // ---------- Conquistas ----------
   function dar(id, novas) { if (!dados.conquistas[id]) { dados.conquistas[id] = hoje(); novas.push(id); ganharXP(15); } }
   function verificarConquistas() {
@@ -209,6 +254,8 @@
     if (ids.includes('hurt')) dar('hurt', novas);
     if (ids.includes('wonderwall')) dar('wonderwall', novas);
     if (completas.some(([, m]) => (m.velocidade || 0) >= 1)) dar('velocidade-original', novas);
+    if (dados.treinoDia && dados.treinoDia.bonus) dar('treino-dia', novas);
+    if (dados.ritmo && dados.ritmo.degrau >= C.ESCADA_RITMO.length - 1) dar('ritmo-universal', novas);
     const seq = sequencia();
     if (seq >= 3) dar('seq-3', novas);
     if (seq >= 7) dar('seq-7', novas);
@@ -235,6 +282,7 @@
     salvar, hoje, sequencia, nivelAtual, ganharXP, somarTempo, tempoHoje,
     licao, concluida, registrarLicao, registrarMusica, registrarTroca, recordeTroca,
     licaoDesbloqueada, unidadeConcluida, musicaDesbloqueada, pularAte, acordesAprendidos,
+    ritmoAtual, avancarRitmo, treinoDia, marcarTreino, parFraco,
     verificarConquistas, exportar, importar, zerar,
     aoMudar(f) { ouvintes.add(f); return () => ouvintes.delete(f); }
   };

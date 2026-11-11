@@ -1,6 +1,6 @@
 // Guarda os arquivos do app para abrir mesmo sem internet.
 // Estratégia: tenta a rede primeiro (pega sempre a versão nova) e usa o cache se falhar.
-const CACHE = 'violao-de-bolso-v2';
+const CACHE = 'violao-de-bolso-v3';
 const ARQUIVOS = [
   './', 'index.html', 'css/estilo.css', 'manifest.webmanifest', 'icone.svg',
   'icone-192.png', 'icone-512.png', 'icone-mascara-512.png', 'icone-apple-180.png',

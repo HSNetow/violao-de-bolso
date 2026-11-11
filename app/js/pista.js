@@ -52,6 +52,8 @@
       const batida = 60 / cfg.bpm;
       const contagem = 4;
       const candidatos = cfg.candidatos || [...new Set(blocos.map((b) => b.id))];
+      const temColcheias = slots.some((x, i) => i % 2 === 1 && x !== '-');
+      const mostrarMao = cfg.padrao !== 'q1' && cfg.padrao !== 'q2';
       let extras = 0;
       const desvios = [];
 
@@ -70,7 +72,7 @@
       const btParar = el('button', { class: 'bt bt-secundario' }, 'Parar');
       const padraoTxt = el('div', { class: 'pista-padrao' }, el('span', { class: 'rotulo' }, 'Ritmo'), C.PADROES[cfg.padrao].curto);
       const rodape = el('div', { class: 'pista-rodape' }, padraoTxt, barra, el('div', { class: 'pista-linha' }, el('span', { class: 'rotulo' }, icone('mic')), medidor, btParar));
-      if (cfg.abafado) painel.appendChild(el('div', { class: 'pista-abafado' }, el('b', null, 'Cordas abafadas'), el('span', null, 'Encoste a mão do braço nas cordas, sem apertar, e bata no ritmo.')));
+      if (cfg.abafado) painel.appendChild(el('div', { class: 'pista-abafado' }, el('b', null, 'Cordas abafadas'), el('span', null, 'Encoste a mão do braço nas cordas, sem apertar. A bolinha ao lado da linha é a sua mão: suba e desça junto com ela, sem parar.')));
       corpo.append(el('div', { class: 'pista-tela' }, painel, caixaCanvas, rodape));
 
       const g = canvas.getContext('2d');
@@ -233,6 +235,7 @@
           if (b >= 0 && b < cfg.total) {
             g.fillStyle = cor.texto2; g.font = '600 11px ' + cor.fonteNome; g.textAlign = 'center';
             g.fillText(String((b % 4) + 1), xb, H - 3);
+            if (temColcheias) g.fillText('e', x(b + 0.5), H - 3);
           }
         }
         // marcas de seção
@@ -289,6 +292,18 @@
         g.shadowColor = cor.acento; g.shadowBlur = 10;
         g.beginPath(); g.moveTo(xToque, 4); g.lineTo(xToque, H - 14); g.stroke();
         g.shadowBlur = 0;
+        // a "mão": desce no tempo, sobe no "e", sem parar
+        if (mostrarMao) {
+          const fase = 2 * Math.PI * tb;
+          const ym = yMeio + Math.sin(fase) * hB * 0.3;
+          const descendo = Math.cos(fase) > 0;
+          const xm = xToque - 26;
+          g.fillStyle = descendo ? cor.texto : cor.acento;
+          g.beginPath(); g.arc(xm, ym, 11, 0, Math.PI * 2); g.fill();
+          g.fillStyle = cor.fundo; g.font = '700 14px ' + cor.fonteNome; g.textAlign = 'center'; g.textBaseline = 'middle';
+          g.fillText(descendo ? '↓' : '↑', xm, ym + 1);
+          g.textBaseline = 'alphabetic';
+        }
       }
 
       // ---------- Laço ----------
@@ -348,10 +363,12 @@
         const errosPorAcorde = {};
         blocos.filter((b) => b.estado === 'erro').forEach((b) => { errosPorAcorde[b.id] = (errosPorAcorde[b.id] || 0) + 1; });
         const silencioso = blocos.filter((b) => b.estado === 'erro' && b.ok === 0 && !b.viu).length;
+        const porSlot = Array.from({ length: 8 }, () => ({ total: 0, erros: 0 }));
+        batidas.forEach((b) => { const i = Math.round((b.tempo % 4) * 2) % 8; porSlot[i].total++; if (b.estado !== 'perfeito' && b.estado !== 'bom') porSlot[i].erros++; });
         const mediaDesvio = desvios.length ? desvios.reduce((a, b) => a + b, 0) / desvios.length : 0;
         resolver({
           pct, estrelas, pctAcordes, pctRitmo, perf, bom, perdidas: nB - perf - bom, extras, nBatidas: nB,
-          okBlocos: okB, nBlocos: blocos.length, errosPorAcorde, silencioso, mediaDesvio,
+          okBlocos: okB, nBlocos: blocos.length, errosPorAcorde, silencioso, mediaDesvio, porSlot,
           avaliouAcordes: !!(cfg.avaliarAcordes && blocos.length), avaliouRitmo: !!cfg.avaliarRitmo
         });
       }
@@ -369,6 +386,11 @@
     }
     if (r.avaliouRitmo) {
       if (Math.abs(r.mediaDesvio) > 0.035) dicas.push(`Você tende a tocar ${r.mediaDesvio < 0 ? 'adiantado' : 'atrasado'} (${Math.round(Math.abs(r.mediaDesvio) * 1000)} ms). ${r.mediaDesvio < 0 ? 'Segure um pouco' : 'Antecipe um pouco'}, ou refaça a sincronização no Treino.`);
+      if (r.porSlot && r.perdidas < r.nBatidas * 0.6) {
+        let pior = -1, taxa = 0.34;
+        r.porSlot.forEach((p, i) => { if (p.total >= 2 && p.erros / p.total > taxa) { taxa = p.erros / p.total; pior = i; } });
+        if (pior >= 0) dicas.push('A batida que mais escapa é a ' + (pior % 2 === 0 ? '↓ do tempo ' + (pior / 2 + 1) : '↑ do "e" depois do ' + ((pior - 1) / 2 + 1)) + '. Conte em voz alta "1 e 2 e 3 e 4 e" e ouça o exemplo de novo.');
+      }
       if (r.perdidas > r.nBatidas * 0.25) dicas.push('Várias batidas passaram sem som. Mantenha a mão subindo e descendo sem parar.');
       if (r.extras > Math.max(4, r.nBatidas * 0.12)) dicas.push('Teve batidas fora do lugar. Nos espaços (·) a mão passa sem encostar nas cordas.');
     }

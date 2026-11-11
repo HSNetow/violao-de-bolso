@@ -154,14 +154,15 @@ registerProcessor('ataques-violao', ProcAtaques);`;
     agora() { return this.ctx ? this.ctx.currentTime : 0; },
 
     // ---------- Metrônomo ----------
-    clique(t, forte) {
-      if (!this.ctx || this.volumeClique <= 0) return;
+    clique(t, forte, volMin) {
+      const vol = Math.max(this.volumeClique, volMin || 0);
+      if (!this.ctx || vol <= 0) return;
       const ctx = this.ctx;
       const o = ctx.createOscillator(), o2 = ctx.createOscillator(), g = ctx.createGain();
       o.type = 'sine'; o2.type = 'sine';
       o.frequency.value = forte ? 7000 : 6000;
       o2.frequency.value = forte ? 9100 : 7900;
-      const v = this.volumeClique * (forte ? 1 : 0.7);
+      const v = vol * (forte ? 1 : 0.7);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.linearRampToValueAtTime(v, t + 0.004);
       g.gain.exponentialRampToValueAtTime(0.0005, t + 0.045);
@@ -170,13 +171,13 @@ registerProcessor('ataques-violao', ProcAtaques);`;
     },
 
     // agenda cliques de [inicio, fim) com intervalo "batida"; retorna função para cancelar
-    metronomo(inicio, batida, quantos, acentoCada) {
+    metronomo(inicio, batida, quantos, acentoCada, volMin) {
       let k = 0, cancelado = false;
       const passo = () => {
         if (cancelado) return;
         const limite = this.agora() + 0.25;
         while (k < quantos && inicio + k * batida < limite) {
-          this.clique(inicio + k * batida, acentoCada && k % acentoCada === 0);
+          this.clique(inicio + k * batida, acentoCada && k % acentoCada === 0, volMin);
           k++;
         }
         if (k < quantos) setTimeout(passo, 60);
@@ -243,6 +244,58 @@ registerProcessor('ataques-violao', ProcAtaques);`;
         o.start(t + i * 0.07); o.stop(t + i * 0.07 + 0.4);
       });
       this.silenciarAte = Math.max(this.silenciarAte, t + 0.7);
+    },
+
+    // ---------- Exemplo sonoro de um ritmo ----------
+    abafado(t, direcao) {
+      const ctx = this.ctx;
+      if (!this.bufRuido) {
+        const n = Math.round(ctx.sampleRate * 0.06);
+        const b = ctx.createBuffer(1, n, ctx.sampleRate), d = b.getChannelData(0);
+        for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 2);
+        this.bufRuido = b;
+      }
+      const s = ctx.createBufferSource(); s.buffer = this.bufRuido;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = direcao === 'cima' ? 2600 : 1400; f.Q.value = 0.8;
+      const g = ctx.createGain(); g.gain.value = direcao === 'cima' ? 0.55 : 0.9;
+      s.connect(f); f.connect(g); g.connect(ctx.destination);
+      s.start(t);
+      return s;
+    },
+    exemplo: null,
+    pararExemplo() {
+      const ex = this.exemplo;
+      if (!ex) return;
+      this.exemplo = null;
+      ex.parar();
+      clearTimeout(ex.timer);
+      ex.fontes.forEach((s) => { try { s.stop(); } catch (e) { /* já parou */ } });
+      if (this.ctx) this.silenciarAte = this.ctx.currentTime + 0.3;
+      if (ex.aoFim) ex.aoFim();
+    },
+    // toca o padrão com clique; acordes = lista de ids (um por compasso, em rodízio) ou vazia para abafado
+    async tocarPadrao(slots, bpm, acordes, capo, compassos, aoFim) {
+      await this.garantirContexto();
+      this.pararExemplo();
+      const batida = 60 / bpm, t0 = this.ctx.currentTime + 0.25;
+      const ex = { fontes: [], aoFim };
+      ex.parar = this.metronomo(t0, batida, compassos * 4, 4, 0.35);
+      this.exemplo = ex;
+      let anterior = null;
+      for (let c = 0; c < compassos; c++) {
+        for (let i = 0; i < slots.length; i++) {
+          if (slots[i] === '-') continue;
+          const t = t0 + (c * 4 + i * 0.5) * batida;
+          const dir = slots[i] === 'B' ? 'baixo' : 'cima';
+          const id = acordes && acordes.length ? acordes[c % acordes.length] : null;
+          const s = id ? await this.tocarAcorde(id, capo, { t, direcao: dir, volume: dir === 'baixo' ? 0.7 : 0.4 }) : this.abafado(t, dir);
+          if (this.exemplo !== ex) { try { s.stop(); } catch (e) { /* ok */ } return; }
+          if (anterior && id) { try { anterior.stop(t + 0.02); } catch (e) { /* ok */ } }
+          anterior = s;
+          ex.fontes.push(s);
+        }
+      }
+      ex.timer = setTimeout(() => { if (this.exemplo === ex) this.pararExemplo(); }, (compassos * 4 * batida + 0.9) * 1000);
     },
 
     // ---------- Robô violonista (modo demonstração) ----------
