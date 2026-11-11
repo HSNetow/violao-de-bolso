@@ -46,9 +46,9 @@
       el('div', { class: 'rotulo' }, 'Sua música'),
       el('h2', null, foco.titulo), el('div', { class: 'musica-artista' }, foco.artista),
       el('div', { class: 'cm-acordes' }, ...foco.acordes.map((id) => el('span', { class: 'tag' + (sabe.has(id) ? ' sabe' : '') }, T.ACORDES[id].nome))),
-      el('p', null, faltam.length ? 'Falta aprender: ' + faltam.map((id) => T.ACORDES[id].nome).join(', ') + '. Depois é tocar com a banda.' : 'Você já sabe todos os acordes. Toque com a banda: uma batida por acorde já soa como a música.'),
+      el('p', null, faltam.length ? 'Falta aprender: ' + faltam.map((id) => T.ACORDES[id].nome).join(', ') + '.' : 'Você já sabe todos os acordes. Comece no ritmo Fácil, uma batida por acorde.'),
       el('div', { class: 'linha-botoes' },
-        proxAcorde ? el('button', { class: 'bt', onclick: () => L.rodarLicao(proxAcorde) }, 'Aprender o acorde ' + T.ACORDES[proxAcorde.acorde].nome) : el('button', { class: 'bt', onclick: () => L.abrirMusica(foco) }, icone('play'), ' Tocar com a banda'),
+        proxAcorde ? el('button', { class: 'bt', onclick: () => L.rodarLicao(proxAcorde) }, 'Aprender o acorde ' + T.ACORDES[proxAcorde.acorde].nome) : el('button', { class: 'bt', onclick: () => L.abrirMusica(foco) }, icone('play'), ' Tocar a música'),
         proxAcorde ? el('button', { class: 'bt bt-secundario', onclick: () => L.abrirMusica(foco) }, 'Tocar mesmo assim') : null,
         el('button', { class: 'bt bt-secundario', onclick: () => irPara('musicas') }, 'Trocar de música'))));
     const licAtual = C.LICOES.find((l) => !E.concluida(l.id) && E.licaoDesbloqueada(l.id));
@@ -115,7 +115,7 @@
   // ---------- Músicas ----------
   function renderMusicas() {
     const c = main();
-    c.append(el('p', { class: 'intro-aba' }, 'Escolha uma música e toque com a banda (bateria e baixo). No ritmo Fácil, uma batida por acorde já soa como música. Sem letra; se quiser cantar, abra a letra num site de cifras.'));
+    c.append(el('p', { class: 'intro-aba' }, 'Escolha uma música e toque por partes. Comece no ritmo Fácil, uma batida por acorde. Sem letra; se quiser cantar, abra a letra num site de cifras.'));
     const lista = el('div', { class: 'lista-musicas' });
     C.MUSICAS.forEach((m) => {
       const livre = E.musicaDesbloqueada(m);

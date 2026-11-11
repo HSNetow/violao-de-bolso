@@ -3,3 +3,6 @@ certificado/
 .claude/
 node_modules/
 *.log
+
+# gravações originais: uso pessoal, nunca publicar
+musicas-originais/

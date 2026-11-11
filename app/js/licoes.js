@@ -531,7 +531,7 @@
     chk.addEventListener('change', () => { E.dados.config[chave] = chk.checked; E.salvar(); });
     return el('label', { class: 'opcao', for: id }, chk, el('span', null, rotulo));
   }
-  function opcoesBanda() { return [opcaoConfig('banda', 'Tocar com a banda (bateria e baixo)'), opcaoConfig('fone', 'Estou de fone de ouvido')]; }
+  function opcoesBanda() { return [opcaoConfig('bandaSint', 'Bateria e baixo sintetizados (não é a gravação)'), opcaoConfig('fone', 'Estou de fone de ouvido')]; }
   const AVISO_FONE = 'Sem fone, o som da banda entra no microfone: o app confere só os acordes e fica mais generoso. Com fone de ouvido ele confere também cada batida.';
   function opcaoMetronomo() {
     const id = 'metro-' + Math.random().toString(36).slice(2, 7);
@@ -580,8 +580,8 @@
       const { capo, blocos, total } = montar();
       const r = await window.Pista.rodarPista(palco, {
         blocos, total, padrao: licao.padrao, bpm: licao.bpm, capo,
-        avaliarAcordes: blocos.length > 0, avaliarRitmo: ritmo || !E.dados.config.banda || E.dados.config.fone, abafado: ritmo && !licao.acorde,
-        banda: !ritmo && E.dados.config.banda, metronomo: E.dados.config.volumeClique > 0, candidatos: [...new Set(blocos.map((b) => b.id))].concat(candidatosPara(ids[0] || 'Em')).filter((v, i, a) => a.indexOf(v) === i),
+        avaliarAcordes: blocos.length > 0, avaliarRitmo: ritmo || !E.dados.config.bandaSint || E.dados.config.fone, abafado: ritmo && !licao.acorde,
+        banda: !ritmo && E.dados.config.bandaSint, metronomo: E.dados.config.volumeClique > 0, candidatos: [...new Set(blocos.map((b) => b.id))].concat(candidatosPara(ids[0] || 'Em')).filter((v, i, a) => a.indexOf(v) === i),
         acordeRobo: 'Em'
       });
       M.desligarMicrofone();
@@ -676,8 +676,8 @@
     const ids = [...new Set(blocos.map((b) => b.id))];
     const r = await window.Pista.rodarPista(palco, {
       blocos, total, padrao, bpm, capo, marcas: secaoId ? [] : marcas,
-      avaliarAcordes: true, avaliarRitmo: nivel.id !== 'facil' && (!E.dados.config.banda || E.dados.config.fone),
-      banda: E.dados.config.banda, metronomo: E.dados.config.volumeClique > 0, candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, a) => a.indexOf(v) === i)
+      avaliarAcordes: true, avaliarRitmo: nivel.id !== 'facil' && (!E.dados.config.bandaSint || E.dados.config.fone),
+      banda: E.dados.config.bandaSint, metronomo: E.dados.config.volumeClique > 0, candidatos: ids.concat(candidatosPara(ids[0])).filter((v, i, a) => a.indexOf(v) === i)
     });
     M.desligarMicrofone();
     if (!r) { paginaMusica(palco, m); return; }
@@ -686,7 +686,7 @@
     if (r.avaliouRitmo) linhas.push(['Batidas no tempo', `${r.perf + r.bom} de ${r.nBatidas}`]);
     linhas.push(['Velocidade', Math.round(pref.velocidade * 100) + '%'], ['Nota', Math.round(r.pct * 100) + '%']);
     const dicas = window.Pista.dicasDoResultado(r);
-    if (E.dados.config.banda && !E.dados.config.fone && nivel.id !== 'facil') dicas.push('Sem fone, o app conferiu só os acordes. Com fone de ouvido ele confere também as batidas.');
+    if (E.dados.config.bandaSint && !E.dados.config.fone && nivel.id !== 'facil') dicas.push('Sem fone, o app conferiu só os acordes. Com fone de ouvido ele confere também as batidas.');
     if (!secaoId && r.estrelas > 0 && pref.velocidade < 1) dicas.push('Próximo passo: suba a velocidade aos poucos até 100%.');
     if (!secaoId && r.estrelas > 0 && nivel.id !== 'original') dicas.push('Quando ficar fácil, troque o ritmo para "Completo".');
     telaResultado(palco, {

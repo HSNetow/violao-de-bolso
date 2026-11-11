@@ -17,7 +17,7 @@
     metaMinutos: 10,
     metaBatidaEm: '',
     conquistas: {},      // id -> data
-    config: { latencia: null, volumeClique: 0.5, sensibilidade: 1, temCapo: true, demo: false, banda: true, fone: false },
+    config: { latencia: null, volumeClique: 0.5, sensibilidade: 1, temCapo: true, demo: false, bandaSint: false, fone: false },
     foco: null,
     ritmo: { degrau: 0, bpm: 50 },
     treinoDia: { data: '', feitos: [false, false, false], bonus: false },
