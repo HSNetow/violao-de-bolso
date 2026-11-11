@@ -1,0 +1,5 @@
+# chave privada do https local: nunca publicar
+certificado/
+.claude/
+node_modules/
+*.log
