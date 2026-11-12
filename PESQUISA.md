@@ -146,3 +146,24 @@ original (direitos autorais) e letras das músicas (só a sequência de acordes)
   - Tempo Perdido: https://acordesweb.com/cancion/legiao-urbana/tempo-perdido
   - Pais e Filhos: https://www.vagalume.com.br/legiao-urbana/pais-e-filhos-cifrada.html
   - A Horse With No Name: https://www.guitartabsexplorer.com/america/a-horse-with-no-name-chords
+
+## Terceira rodada: o que os reviews em vídeo mostraram
+
+Dois reviews transcritos pelo usuário trouxeram o que faltava:
+
+- **Nota por nota desde o primeiro dia.** No Simply, o iniciante toca o riff ou a melodia de uma
+  música conhecida, uma corda de cada vez. Por isso soa como a música na hora. Acorde com batida só
+  vira "a música" quando alguém canta por cima.
+- **O app espera por você.** O aluno repete os mesmos compassos quantas vezes precisar; nada avança
+  até ele acertar.
+- **Progresso visível no primeiro dia:** toca, a tela diz "sim", segue.
+- Pontos fracos citados: sem metrônomo nem ensino de ritmo, e detecção de acordes cheios menos
+  confiável que a de notas soltas.
+
+O que mudou no Violão de Bolso:
+
+- **Dedilhado** como primeira etapa de cada música com gravação: uma corda por tempo, do baixo para
+  as finas, segurando os acordes. Em Hurt é o que o Johnny Cash faz na gravação (versão de aula).
+- **Modo "o app espera você"** para aprender o dedilhado sem pressa, nota por nota.
+- A escada completa: dedilhado → uma batida por acorde → para baixo em cada tempo → entra a batida
+  para cima → o ritmo da música. Tudo tocado junto com a gravação original.

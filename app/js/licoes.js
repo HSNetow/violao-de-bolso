@@ -811,6 +811,7 @@
 
   // ---------- A música como uma escada de 4 etapas, tocada com a gravação ----------
   const ETAPAS = [
+    { id: 'd1', nome: 'Dedilhado: uma corda por tempo', padrao: 'dedilhado', nivel: 'facil', desc: 'Segure o acorde e toque uma corda de cada vez, do baixo para as finas. É o som da gravação. O número na pista é a corda.' },
     { id: 'e1', nome: 'Uma batida por acorde', padrao: 'livre', nivel: 'facil', desc: 'Só a troca: uma batida para baixo cada vez que o acorde muda. O resto do tempo você escuta a música.' },
     { id: 'e2', nome: 'Para baixo em cada tempo', padrao: 'q4', nivel: 'medio', desc: 'A mão desce junto com o pulso da música: 1, 2, 3, 4.' },
     { id: 'e3', nome: 'Entra a batida para cima', padrao: 'ddu', nivel: 'medio', desc: 'A mão agora sobe tocando depois dos tempos 2 e 4.' },
@@ -828,9 +829,88 @@
       const bruto = (b - a) / g.batida;
       const nb = bruto < 3 ? 2 : bruto < 6 ? 4 : 8;
       segs.push({ id, a, b });
-      for (let k = 0; k < nb; k++) { tempos.push({ t: a + k * (b - a) / nb, dt: (b - a) / nb, n: cont % 4 + 1, k }); cont++; }
+      for (let k = 0; k < nb; k++) { tempos.push({ t: a + k * (b - a) / nb, dt: (b - a) / nb, n: cont % 4 + 1, k, id, nb }); cont++; }
     });
     return { segs, tempos };
+  }
+
+  // dedilhado de um acorde: cordas tocadas, do baixo para as finas (uma por tempo)
+  function arpejo(id, capo) {
+    const ac = T.ACORDES[id], cordas = [];
+    ac.casas.forEach((c, st) => { if (c >= 0) cordas.push({ corda: st, midi: T.CORDAS_SOLTAS[st] + c + (capo || 0) }); });
+    const quatro = [0, 1, 2, 3].map((i) => cordas[i % cordas.length]);
+    return (k) => quatro[k % 4];
+  }
+  function forcaDaNota(picos, midi) {
+    const alvos = T.freqDeMidi(midi) < 140 ? [midi, midi + 12] : [midi];
+    let max = 0, alvo = 0;
+    for (const p of picos) { if (p.mag > max) max = p.mag; const mp = T.midiDeFreq(p.f); if (p.mag > alvo && alvos.some((a) => Math.abs(mp - a) < 0.35)) alvo = p.mag; }
+    return max ? alvo / max : 0;
+  }
+
+  // Aprender o dedilhado sem pressa: o app espera a nota certa antes de avançar
+  async function aprenderDedilhado(palco, m, blob, pref) {
+    palco.limpar();
+    palco.tituloEl.textContent = 'Dedilhado · o app espera você';
+    const g = m.gravacao, capo = g.capo || 0;
+    const { tempos } = gradeDaGravacao(g, 0);
+    // primeiro ciclo de acordes da música (até o primeiro acorde voltar)
+    const passos = [];
+    for (const tp of tempos) { if (passos.length && tp.k === 0 && tp.id === passos[0].id) break; passos.push({ id: tp.id, nota: arpejo(tp.id, capo)(tp.k), primeiro: tp.k === 0 }); }
+    const voltas = 3;
+    let i = 0, volta = 0, houveAtaque = false, forcaAnt = 0, terminou = false, tempoAcum = 0;
+    const nome = el('div', { class: 'ac-nome' }), caixaDiag = el('div', { class: 'ac-diagrama' });
+    const instr = el('div', { class: 'ac-status', 'aria-live': 'polite' });
+    const fita = el('div', { class: 'fita-notas' }, ...passos.map((p) => el('span', { class: p.primeiro ? 'primeiro' : '' }, el('small', null, p.primeiro ? T.ACORDES[p.id].nome : ''), el('b', null, String(6 - p.nota.corda)))));
+    const contador = el('div', { class: 'ac-progresso' }, ...Array.from({ length: voltas }, () => el('span')));
+    const medidor = el('div', { class: 'medidor' }, el('div'));
+    palco.corpo.append(el('div', { class: 'licao-acorde' },
+      el('p', { class: 'ac-dica' }, 'Monte o acorde e toque só a corda indicada, deixando soar. O app espera você acertar antes de ir para a próxima. Complete o ciclo ' + voltas + ' vezes.'),
+      nome, caixaDiag, instr, fita, contador,
+      el('div', { class: 'ac-escuta' }, el('div', { class: 'linha-medidor' }, icone('mic'), medidor))));
+    function mostrar() {
+      const p = passos[i];
+      nome.textContent = T.ACORDES[p.id].nome;
+      const marca = [null, null, null, null, null, null]; marca[p.nota.corda] = true;
+      caixaDiag.innerHTML = ''; caixaDiag.append(diagrama(p.id, { largura: 180, cordas: marca, capo }));
+      instr.className = 'ac-status';
+      instr.textContent = 'Toque a ' + (6 - p.nota.corda) + 'ª corda (' + T.NOMES_CORDAS[p.nota.corda] + ')' + (p.primeiro ? ' · troque para ' + T.ACORDES[p.id].nome : '');
+      [...fita.children].forEach((c, k) => { c.classList.toggle('atual', k === i); c.classList.toggle('feito', k < i); });
+    }
+    mostrar();
+    const ok = await ligarMic(palco, () => aprenderDedilhado(palco, m, blob, pref));
+    if (!ok) return;
+    let robo = null;
+    if (M.simulado) { const tocar = () => { if (terminou) return; M.roboNota(passos[i].nota.midi, M.agora() + 0.32); robo = setTimeout(tocar, 1000); }; robo = setTimeout(tocar, 600); }
+    const onAtaque = () => { houveAtaque = true; };
+    const onQuadro = (r) => {
+      medidor.firstChild.style.width = (Math.max(0, Math.min(1, (r.db + 60) / 50)) * 100).toFixed(0) + '%';
+      if (terminou || !r.temSinal) { forcaAnt = 0; return; }
+      tempoAcum += 0.07;
+      const fo = forcaDaNota(r.picos, passos[i].nota.midi);
+      const subiu = fo >= 0.6 && forcaAnt < 0.3;
+      forcaAnt = fo;
+      if ((houveAtaque && fo >= 0.35) || subiu) {
+        houveAtaque = false; forcaAnt = 1;
+        i++;
+        if (i >= passos.length) { i = 0; contador.children[volta].classList.add('feito'); volta++; if (volta >= voltas) { fim(); return; } }
+        mostrar();
+      } else if (houveAtaque && fo < 0.15) { instr.textContent = 'Outra corda soou. Procure a ' + (6 - passos[i].nota.corda) + 'ª corda.'; houveAtaque = false; }
+    };
+    M.ouvQuadro.add(onQuadro); M.ouvAtaque.add(onAtaque);
+    const limpar = () => { terminou = true; clearTimeout(robo); M.pararRobo(); M.ouvQuadro.delete(onQuadro); M.ouvAtaque.delete(onAtaque); if (tempoAcum) E.somarTempo(tempoAcum); tempoAcum = 0; };
+    palco.aoFechar(limpar);
+    function fim() {
+      limpar();
+      M.desligarMicrofone();
+      const ganho = E.registrarMusica(m.id, 'd1-aprender', 3, 1, 'facil', 1);
+      telaResultado(palco, {
+        estrelas: 3, ganho, titulo: 'Você tocou o dedilhado de ' + m.titulo,
+        subtitulo: 'Agora toque junto com a gravação: comece pelo primeiro trecho.',
+        botoes: [{ texto: 'Tocar com a gravação: ' + g.marcas[0].nome, primario: true, acao: () => tocarEtapa(palco, m, blob, ETAPAS[0], g.marcas[0], pref) }, { texto: 'Repetir devagar', acao: () => aprenderDedilhado(palco, m, blob, pref) }, { texto: 'Voltar para a música', acao: () => paginaMusica(palco, m) }]
+      });
+      if (window.App) window.App.atualizar();
+    }
   }
 
   function etapaLiberada(m, i) {
@@ -874,11 +954,12 @@
             el('span', { class: 'tp-num' }, livre ? String(i + 1) : icone('cadeado')),
             el('div', null, el('b', null, et.nome), el('span', null, et.desc)),
             est ? estrelas(est) : null),
-          et.padrao !== 'livre' ? setasPadrao(et.padrao) : null,
+          et.padrao !== 'livre' && et.padrao !== 'dedilhado' ? setasPadrao(et.padrao) : null,
           livre ? el('div', { class: 'etapa-trechos' },
+            et.padrao === 'dedilhado' ? el('button', { class: 'trecho aprender', onclick: () => aprenderDedilhado(palco, m, blob, pref) }, el('b', null, 'Aprender devagar'), el('span', null, 'o app espera você'), estrelas(partes['d1-aprender'] || 0)) : null,
             ...trechos.map((tr) => el('button', { class: 'trecho' + (tr.inteira ? ' inteira' : ''), onclick: () => tocarEtapa(palco, m, blob, et, tr.inteira ? null : tr, pref) },
               el('b', null, tr.nome), el('span', null, tr.inteira ? fmt(g.duracao) : fmt(tr.ini)), estrelas(partes[et.id + '-' + (tr.inteira ? 'inteira' : tr.nome)] || 0))),
-            et.padrao !== 'livre' ? botaoOuvir(() => ({ padrao: et.padrao, bpm: Math.round(60 / g.batida * pref.velGrav), ids: [m.acordes[0]], capo: g.capo || 0 })) : null)
+            et.padrao !== 'livre' && et.padrao !== 'dedilhado' ? botaoOuvir(() => ({ padrao: et.padrao, bpm: Math.round(60 / g.batida * pref.velGrav), ids: [m.acordes[0]], capo: g.capo || 0 })) : null)
             : el('p', { class: 'nota' }, 'Libera quando você passar em algum trecho da etapa ' + i + '.')));
       });
     }
@@ -921,6 +1002,7 @@
     const batidas = [], fantasmas = [];
     dentro.forEach((tp) => {
       const si = (tp.k % 4) * 2;
+      if (et.padrao === 'dedilhado') { const nt = arpejo(tp.id, g.capo || 0)(tp.k); batidas.push({ tempo: tp.t - ini, dir: 'baixo', slot: tp.k % 8, rotulo: String(6 - nt.corda) }); return; }
       if (et.padrao === 'livre') { if (tp.k === 0) batidas.push({ tempo: tp.t - ini, dir: 'baixo', slot: 0 }); return; }
       [0, 1].forEach((meio) => {
         const sl = slots[si + meio], t = tp.t - ini + meio * tp.dt / 2;
@@ -1245,7 +1327,7 @@
       if (pref.a && !acordes.includes(pref.a)) pref.a = '';
       if (pref.b && !acordes.includes(pref.b)) pref.b = '';
       const caixaSetas = el('div', null, setasPadrao(pref.padrao));
-      const selPadrao = el('select', { id: 'rl-padrao' }, ...Object.entries(C.PADROES).filter(([k]) => k !== 'q1' && k !== 'q2' && k !== 'livre').map(([k, v]) => el('option', { value: k, selected: k === pref.padrao }, v.curto + '  ' + v.nome)));
+      const selPadrao = el('select', { id: 'rl-padrao' }, ...Object.entries(C.PADROES).filter(([k]) => k !== 'q1' && k !== 'q2' && k !== 'livre' && k !== 'dedilhado').map(([k, v]) => el('option', { value: k, selected: k === pref.padrao }, v.curto + '  ' + v.nome)));
       selPadrao.addEventListener('change', () => { pref.padrao = selPadrao.value; guardar(); M.pararExemplo(); caixaSetas.innerHTML = ''; caixaSetas.append(setasPadrao(pref.padrao)); });
       const bpm = el('input', { type: 'range', id: 'rl-bpm', min: '40', max: '120', step: '5', value: String(pref.bpm) });
       const bpmTxt = el('output', { for: 'rl-bpm' }, pref.bpm + ' bpm');

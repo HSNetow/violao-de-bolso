@@ -512,3 +512,12 @@ select { background: var(--superficie-2); border: 1px solid var(--linha); border
 .trecho span { color: var(--texto-2); font-size: 0.74rem; }
 .trecho.inteira { border-color: var(--acento); }
 .trecho .estrelas .ico { width: 12px; height: 12px; }
+
+.fita-notas { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.fita-notas span { display: flex; flex-direction: column; align-items: center; min-width: 34px; padding: 4px 6px; border-radius: 10px; background: var(--superficie); border: 2px solid var(--linha); }
+.fita-notas span.primeiro { margin-left: 8px; }
+.fita-notas small { font-size: 0.68rem; color: var(--texto-2); min-height: 1em; }
+.fita-notas b { font-family: var(--fonte-acorde); font-size: 1.4rem; line-height: 1; }
+.fita-notas span.atual { border-color: var(--acento); background: color-mix(in srgb, var(--acento) 18%, var(--superficie)); }
+.fita-notas span.feito { border-color: var(--ok); color: var(--ok); }
+.trecho.aprender { border-color: var(--bom); }

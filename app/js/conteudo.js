@@ -13,6 +13,7 @@
     q4: { nome: 'Para baixo nos 4 tempos', curto: '↓ ↓ ↓ ↓', slots: ['B', '-', 'B', '-', 'B', '-', 'B', '-'] },
     c8: { nome: 'Colcheias (baixo e cima)', curto: '↓↑ ↓↑ ↓↑ ↓↑', slots: ['B', 'C', 'B', 'C', 'B', 'C', 'B', 'C'] },
     ddu: { nome: 'Baixo, baixo-cima', curto: '↓ ↓↑ ↓ ↓↑', slots: ['B', '-', 'B', 'C', 'B', '-', 'B', 'C'] },
+    dedilhado: { nome: 'Dedilhado', curto: 'uma corda por tempo', slots: ['-', '-', '-', '-', '-', '-', '-', '-'] },
     livre: { nome: 'Uma batida em cada acorde', curto: '↓ a cada troca', slots: ['-', '-', '-', '-', '-', '-', '-', '-'] },
     pop: { nome: 'Ritmo universal do violão', curto: '↓ ↓↑ ↑↓↑', slots: ['B', '-', 'B', 'C', '-', 'C', 'B', 'C'] }
   };

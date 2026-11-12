@@ -53,7 +53,7 @@
       const contagem = 4;
       const candidatos = cfg.candidatos || [...new Set(blocos.map((b) => b.id))];
       const temColcheias = slots.some((x, i) => i % 2 === 1 && x !== '-');
-      const mostrarMao = cfg.padrao !== 'q1' && cfg.padrao !== 'q2' && cfg.padrao !== 'livre';
+      const mostrarMao = cfg.padrao !== 'q1' && cfg.padrao !== 'q2' && cfg.padrao !== 'livre' && cfg.padrao !== 'dedilhado';
       let extras = 0;
       const desvios = [];
 
@@ -295,7 +295,12 @@
           else if (b.estado === 'bom') c = cor.bom;
           else if (b.estado === 'perdeu') c = cor.erro;
           g.globalAlpha = b.estado === 'perdeu' ? 0.55 : 1;
-          seta(xb, yMeio, b.dir, b.dir === 'baixo' ? tam : tam * 0.8, c, b.dir === 'baixo' ? 3.4 : 2.6);
+          if (b.rotulo) { // dedilhado: mostra o número da corda
+            g.beginPath(); g.arc(xb, yMeio, tam * 1.05, 0, Math.PI * 2);
+            g.fillStyle = cor.sup2; g.fill(); g.lineWidth = 2.5; g.strokeStyle = c; g.stroke();
+            g.fillStyle = c; g.font = '700 ' + Math.round(tam * 1.25) + 'px ' + cor.fonteNome; g.textAlign = 'center'; g.textBaseline = 'middle';
+            g.fillText(b.rotulo, xb, yMeio + 1); g.textBaseline = 'alphabetic';
+          } else seta(xb, yMeio, b.dir, b.dir === 'baixo' ? tam : tam * 0.8, c, b.dir === 'baixo' ? 3.4 : 2.6);
           g.globalAlpha = 1;
         }
         // linha de toque
